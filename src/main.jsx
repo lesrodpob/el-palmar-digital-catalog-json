@@ -12,6 +12,7 @@ const JSON_URL = "/data/products-list.json";
 
 const categoryGroups = [
   { key: "ALL", label: "Inicio", icon: Home },
+  { key: "DESTACADOS", label: "Destacados", icon: Percent },
   { key: "VINOS", label: "Vinos", icon: Wine },
   { key: "ESPUMANTES", label: "Espumantes", icon: Wine },
   { key: "LICORES", label: "Licores", icon: Martini },
@@ -27,6 +28,7 @@ const groupMap = {
   CERVEZAS: ["CERVEZAS"],
   BEBIDAS: ["BEBIDAS NO ALCOHOLICAS"],
   CONGELADOS: ["CONGELADOS"],
+  DESTACADOS: ["DESTACADOS"],
 };
 
 const money = (value) => new Intl.NumberFormat("es-CL", {
@@ -165,18 +167,49 @@ function App() {
 
     if (!query) return null;
 
-    return categoryGroups.find(
+    // Si la búsqueda coincide exactamente con una categoría, usamos esa categoría.
+    const exactCategory = categoryGroups.find(
       ({ key, label }) =>
         key !== "ALL" &&
         label.toLowerCase() === query
-    )?.key || null;
-  }, [search]);
+    )?.key;
+
+    if (exactCategory) return exactCategory;
+
+    // Desde Inicio, si todos los resultados de la búsqueda pertenecen
+    // a una sola categoría, la mostramos automáticamente como categoría activa.
+    const matchedCategories = new Set(
+      products
+        .filter(p => {
+          if (p.stock <= 0 || p.category === "PROMOCIONES") return false;
+          return [p.name, p.family, p.category, p.barcode]
+            .some(v => String(v ?? "").toLowerCase().includes(query));
+        })
+        .map(p => p.category)
+        .filter(category =>
+          categoryGroups.some(group =>
+            group.key !== "ALL" && groupMap[group.key]?.includes(category)
+          )
+        )
+    );
+
+    return matchedCategories.size === 1
+      ? [...matchedCategories][0] === "BEBIDAS NO ALCOHOLICAS"
+        ? "BEBIDAS"
+        : [...matchedCategories][0]
+      : null;
+  }, [search, products]);
 
   const availableFamilies = useMemo(() => {
     const categoryForFamilies = searchCategory || selectedCategory;
+    const isSearchingFromInicio = Boolean(search.trim()) && categoryForFamilies === "ALL";
 
     const cats = categoryForFamilies === "ALL"
-      ? Object.values(groupMap).flat()
+      ? (isSearchingFromInicio
+          ? Object.values(groupMap).flat()
+          : Object.entries(groupMap)
+              .filter(([key]) => key !== "DESTACADOS")
+              .flatMap(([, categories]) => categories))
       : groupMap[categoryForFamilies];
 
     const families = products
@@ -187,15 +220,20 @@ function App() {
     return [...new Set(families)].sort((a, b) => a.localeCompare(b, "es"));
   }, [products, selectedCategory, searchCategory]);
 
+  // Destacados también funciona como una categoría del catálogo.
+  // La sección superior de destacados se mantiene independiente.
   const filteredProducts = useMemo(() => {
     const query = search.toLowerCase().trim();
     const categoryForSearch = searchCategory || selectedCategory;
     // En "Inicio" solo mostramos productos de las categorías
     // que existen en la barra principal. No se muestran categorías
     // internas como PASTELERIA, VARIOS, CECINAS Y LACTEOS, etc.
-    const visibleCategories = Object.values(groupMap).flat();
+    const visibleCategories = Object.entries(groupMap)
+      .filter(([key]) => key !== "DESTACADOS")
+      .flatMap(([, categories]) => categories);
+    const isSearchingFromInicio = Boolean(query) && categoryForSearch === "ALL";
     const cats = categoryForSearch === "ALL"
-      ? visibleCategories
+      ? (isSearchingFromInicio ? Object.values(groupMap).flat() : visibleCategories)
       : groupMap[categoryForSearch];
     return products
       .filter((p) => {
@@ -204,12 +242,13 @@ function App() {
         const matchesFamily = selectedFamily === "ALL" || p.family === selectedFamily;
         const matchesSearch = !query || [p.name, p.family, p.category, p.barcode]
           .some(v => v.toLowerCase().includes(query));
+        const showDestacados = categoryForSearch === "DESTACADOS" || isSearchingFromInicio;
         return matchesCategory &&
           matchesStock &&
           matchesFamily &&
           matchesSearch &&
           p.category !== "PROMOCIONES" &&
-          p.category !== "DESTACADOS";
+          (showDestacados || p.category !== "DESTACADOS");
       })
       .sort((a, b) => a.name.localeCompare(b.name, "es", { sensitivity: "base" }));
   }, [products, selectedCategory, selectedFamily, search, searchCategory]);
@@ -366,7 +405,7 @@ ${lines.join("\n")}
         <div className="side-line" />
         <nav>
           <button
-            className={`side-item ${selectedCategory === "ALL" && !search ? "active" : ""}`}
+            className={`side-item ${(searchCategory || selectedCategory) === "ALL" ? "active" : ""}`}
             onClick={goHome}
           >
             <Home size={21} /><span>Inicio</span>
@@ -377,7 +416,7 @@ ${lines.join("\n")}
             .map(({ key, label, icon: Icon }) => (
               <button
                 key={key}
-                className={`side-item ${selectedCategory === key ? "active" : ""}`}
+                className={`side-item ${(searchCategory || selectedCategory) === key ? "active" : ""}`}
                 onClick={() => selectCategory(key)}
               >
                 <Icon size={21} /><span>{label}</span>
