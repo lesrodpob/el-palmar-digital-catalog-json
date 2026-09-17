@@ -72,6 +72,8 @@ function App() {
   const [cart, setCart] = useState([]);
   const [cartOpen, setCartOpen] = useState(false);
   const [infoOpen, setInfoOpen] = useState(true);
+  const [imageProduct, setImageProduct] = useState(null);
+  const [imageZoom, setImageZoom] = useState(1);
   const cartRef = useRef(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -108,6 +110,29 @@ function App() {
 
     return () => clearTimeout(timer);
   }, [search]);
+
+  useEffect(() => {
+    if (!imageProduct) return;
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        setImageProduct(null);
+        setImageZoom(1);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [imageProduct]);
+
+  useEffect(() => {
+    if (!imageProduct) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [imageProduct]);
 
   useEffect(() => {
     if (cartOpen) {
@@ -160,6 +185,13 @@ function App() {
   function changePromoPage(delta) {
     setPromoPage(page => (page + delta + promoTotalPages) % promoTotalPages);
     setPromoTimerReset(value => value + 1);
+  }
+
+  function addFromImageModal() {
+    if (!imageProduct || imageProduct.stock <= 0) return;
+    addToCart(imageProduct);
+    setImageProduct(null);
+    setImageZoom(1);
   }
 
   const searchCategory = useMemo(() => {
@@ -490,7 +522,7 @@ ${lines.join("\n")}
 
                   <div className="product-grid promo-grid" key={promoPage}>
                     {visibleFeaturedProducts.map(p => (
-                      <ProductCard key={p.id} product={p} onAdd={addToCart} promo={false} />
+                      <ProductCard key={p.id} product={p} onAdd={addToCart} onImageClick={(product) => { setImageProduct(product); setImageZoom(1); }} promo={false} />
                     ))}
                   </div>
 
@@ -609,7 +641,7 @@ ${lines.join("\n")}
                   <>
                     <div className="product-grid">
                       {paginatedProducts.map(p => (
-                        <ProductCard key={p.id} product={p} onAdd={addToCart} />
+                        <ProductCard key={p.id} product={p} onAdd={addToCart} onImageClick={(product) => { setImageProduct(product); setImageZoom(1); }} />
                       ))}
                     </div>
 
@@ -655,6 +687,106 @@ ${lines.join("\n")}
           )}
         </section>
       </main>
+
+      {imageProduct && (
+        <div
+          className="product-image-modal-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Imagen ampliada de ${imageProduct.name}`}
+          onClick={() => {
+            setImageProduct(null);
+            setImageZoom(1);
+          }}
+        >
+          <div
+            className="product-image-modal"
+            onClick={e => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              className="product-image-modal-close"
+              onClick={() => {
+                setImageProduct(null);
+                setImageZoom(1);
+              }}
+              aria-label="Cerrar imagen"
+            >
+              ×
+            </button>
+
+            <div className="product-image-modal-top">
+              <div className="product-image-modal-title">
+                <strong>{imageProduct.name}</strong>
+                <span>{imageProduct.family || imageProduct.category}</span>
+              </div>
+
+              <div className="product-image-zoom-controls" aria-label="Controles de zoom">
+                <button
+                  type="button"
+                  onClick={() => setImageZoom(z => Math.max(1, +(z - 0.25).toFixed(2)))}
+                  disabled={imageZoom <= 1}
+                  aria-label="Alejar"
+                >
+                  −
+                </button>
+                <span>{Math.round(imageZoom * 100)}%</span>
+                <button
+                  type="button"
+                  onClick={() => setImageZoom(z => Math.min(2.5, +(z + 0.25).toFixed(2)))}
+                  disabled={imageZoom >= 2.5}
+                  aria-label="Acercar"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+
+            <div
+              className="product-image-modal-stage"
+              onWheel={(e) => {
+                e.preventDefault();
+                setImageZoom(z => {
+                  const next = z + (e.deltaY < 0 ? 0.15 : -0.15);
+                  return Math.min(2.5, Math.max(1, +next.toFixed(2)));
+                });
+              }}
+              onDoubleClick={() => setImageZoom(z => z > 1 ? 1 : 2)}
+            >
+              <img
+                src={imageProduct.image}
+                alt={imageProduct.name}
+                className="product-image-modal-img"
+                style={{ transform: `scale(${imageZoom})` }}
+                draggable="false"
+              />
+            </div>
+
+            <div className="product-image-modal-actions">
+              <div className="product-image-modal-price">
+                <span>{money(imageProduct.price)}</span>
+                <small className={imageProduct.stock > 0 ? "stock-ok" : "stock-no"}>
+                  {imageProduct.stock > 0 ? `• En stock (${Math.floor(imageProduct.stock)})` : "• Sin stock"}
+                </small>
+              </div>
+              <button
+                type="button"
+                className="product-image-modal-add"
+                disabled={imageProduct.stock <= 0}
+                onClick={addFromImageModal}
+              >
+                <ShoppingCart size={17} />
+                <span>{imageProduct.stock > 0 ? "Agregar al pedido" : "Sin stock"}</span>
+              </button>
+            </div>
+
+            <div className="product-image-modal-footer">
+              <span>Usa + / − o la rueda del mouse para ampliar</span>
+              <span className="product-image-modal-hint-mobile">Toca + / − para ampliar</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {!cartOpen && (
         <button
@@ -943,11 +1075,36 @@ function QuantityInput({ value, max, onChange }) {
   );
 }
 
-function ProductCard({ product, onAdd, promo = false }) {
+function ProductCard({ product, onAdd, onImageClick, promo = false }) {
   const available = product.stock > 0;
   return (
     <article className="card">
-      <div className="product-placeholder">{product.image ? <img className="product-image" src={product.image} alt={product.name} loading="lazy" onError={(e) => { e.currentTarget.style.display = "none"; }} /> : <Package size={25} />}</div>
+      <div
+        className={`product-placeholder ${product.image ? "product-image-clickable" : ""}`}
+        onClick={() => product.image && onImageClick?.(product)}
+        role={product.image ? "button" : undefined}
+        tabIndex={product.image ? 0 : undefined}
+        onKeyDown={(e) => {
+          if (product.image && (e.key === "Enter" || e.key === " ")) {
+            e.preventDefault();
+            onImageClick?.(product);
+          }
+        }}
+        aria-label={product.image ? `Ver imagen ampliada de ${product.name}` : undefined}
+      >
+        {product.image ? (
+          <img
+            className="product-image"
+            src={product.image}
+            alt={product.name}
+            loading="lazy"
+            onError={(e) => { e.currentTarget.style.display = "none"; }}
+          />
+        ) : <Package size={25} />}
+        {product.image && (
+          <span className="product-image-zoom-badge" aria-hidden="true">⌕</span>
+        )}
+      </div>
       <div className="product-info">
         {promo && <em className="promo">PROMOCIÓN</em>}
         <b title={product.name}>{product.name}</b>
