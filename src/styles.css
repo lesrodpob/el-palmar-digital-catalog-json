@@ -4806,3 +4806,94 @@ input {
         font-size: 9px;
     }
 }
+/* =========================
+   POPUP INFORMACIÓN — RENDER FINAL
+   La pieza gráfica es el contenido visual del popup y los botones
+   transparentes mantienen las acciones interactivas.
+   ========================= */
+
+.info-modal-render {
+    position: relative !important;
+    width: min(88vw, 720px) !important;
+    aspect-ratio: 1 / 1 !important;
+    height: auto !important;
+    max-height: 88vh !important;
+    max-width: 88vh !important;
+    overflow: hidden !important;
+    padding: 0 !important;
+    border-radius: 50% !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: 0 28px 90px rgba(0, 0, 0, .48) !important;
+}
+
+.info-modal-render-image {
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    border-radius: 50% !important;
+    user-select: none !important;
+    -webkit-user-drag: none !important;
+}
+
+.popup-hotspot {
+    position: absolute !important;
+    z-index: 5 !important;
+    display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    cursor: pointer !important;
+    outline: none !important;
+}
+
+.popup-hotspot:focus-visible {
+    box-shadow: 0 0 0 3px rgba(244, 223, 170, .95) !important;
+    border-radius: 999px !important;
+}
+
+.popup-hotspot-close {
+    top: 8.2% !important;
+    right: 7.2% !important;
+    width: 9% !important;
+    height: 9% !important;
+    border-radius: 50% !important;
+}
+
+.popup-hotspot-whatsapp {
+    left: 22% !important;
+    bottom: 8.5% !important;
+    width: 25% !important;
+    height: 9.5% !important;
+    border-radius: 999px !important;
+}
+
+.popup-hotspot-home {
+    right: 20% !important;
+    bottom: 8.5% !important;
+    width: 27% !important;
+    height: 9.5% !important;
+    border-radius: 999px !important;
+}
+
+.sr-only {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+}
+
+@media (max-width: 600px) {
+    .info-modal-render {
+        width: min(94vw, 94vh) !important;
+        max-height: 94vh !important;
+        max-width: 94vh !important;
+    }
+}

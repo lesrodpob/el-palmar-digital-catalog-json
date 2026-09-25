@@ -871,141 +871,47 @@ ${lines.join("\n")}
       {infoOpen && (
         <div className="info-modal-backdrop" onClick={() => setInfoOpen(false)}>
           <div
-            className="info-modal info-modal-final"
+            className="info-modal info-modal-render"
             role="dialog"
             aria-modal="true"
             aria-labelledby="info-modal-title"
             onClick={e => e.stopPropagation()}
           >
-            <div className="info-modal-banner">
-              <div className="info-brand-lockup">
-                <img
-                  src="/el-palmar-modal-banner.png"
-                  alt="Distribuidora El Palmar"
-                />
-              </div>
+            <img
+              className="info-modal-render-image"
+              src="/el-palmar-popup-render.png"
+              alt="Información sobre despachos y medios de pago de Distribuidora El Palmar"
+            />
 
-              <div className="info-brand-phrase">
-                <span>Todo lo que necesitas</span>
-                <span>en un solo lugar</span>
-              </div>
+            <button
+              type="button"
+              className="popup-hotspot popup-hotspot-close"
+              onClick={() => setInfoOpen(false)}
+              aria-label="Cerrar información"
+            >
+              <span aria-hidden="true">×</span>
+            </button>
 
-              <button
-                className="info-modal-close"
-                onClick={() => setInfoOpen(false)}
-                aria-label="Cerrar información"
-                type="button"
-              >
-                ×
-              </button>
+            <button
+              type="button"
+              className="popup-hotspot popup-hotspot-whatsapp"
+              onClick={openWhatsAppContact}
+              aria-label="Abrir WhatsApp para consultas"
+            >
+              <span className="sr-only">Consultas por WhatsApp</span>
+            </button>
 
-              <div className="info-modal-title">
-                <span>INFORMACIÓN PARA TU PEDIDO</span>
-                <h3 id="info-modal-title">Despacho y medios de pago</h3>
-              </div>
-            </div>
-
-            <div className="info-modal-content">
-              <section className="info-card info-delivery-card">
-                <div className="info-icon">
-                  <Truck size={24} />
-                </div>
-
-                <div className="info-card-copy">
-                  <span className="info-label">DESPACHOS</span>
-                  <h4>Despachos gratis por compras desde $50.000</h4>
-
-                  <div className="delivery-list">
-                    <p><strong>● Limache:</strong> Martes</p>
-                    <p><strong>● Olmué:</strong> Miércoles</p>
-                    <p><strong>● Otros sectores:</strong> Comunicarse al WhatsApp.</p>
-                  </div>
-                </div>
-              </section>
-
-              <section className="info-card info-payment-card">
-                <div className="info-icon">
-                  <CreditCardIcon />
-                </div>
-
-                <div className="info-card-copy">
-                  <span className="info-label">MEDIOS DE PAGO</span>
-                  <h4>Aceptamos los siguientes medios de pago:</h4>
-
-                  <div className="payment-logo-grid">
-                    <div className="payment-logo-item">
-                      <span className="payment-logo"><Banknote size={19} /></span>
-                      <span>Efectivo</span>
-                    </div>
-
-                    <div className="payment-logo-item">
-                      <span className="payment-logo"><FileText size={19} /></span>
-                      <span>Cheque</span>
-                    </div>
-
-                    <div className="payment-logo-item">
-                      <span className="payment-logo"><CreditCard size={19} /></span>
-                      <span>Tarjetas débito</span>
-                    </div>
-
-                    <div className="payment-logo-item">
-                      <span className="payment-logo"><CreditCard size={19} /></span>
-                      <span>Tarjetas crédito</span>
-                    </div>
-
-                    <div className="payment-logo-item">
-                      <span className="payment-logo"><ArrowLeftRight size={19} /></span>
-                      <span>Transferencias</span>
-                    </div>
-                  </div>
-                </div>
-              </section>
-
-              <div className="info-modal-footer">
-                <div className="info-footer-icon" aria-hidden="true">
-                  <svg viewBox="0 0 32 32" aria-hidden="true">
-                        <path
-                          d="M16 2.6C8.63 2.6 2.65 8.58 2.65 15.95c0 2.35.62 4.55 1.79 6.49L2.6 29.4l7.13-1.82a13.28 13.28 0 0 0 6.27 1.57h.01c7.36 0 13.34-5.98 13.34-13.34C29.35 8.58 23.37 2.6 16 2.6Z"
-                          fill="#25D366"
-                        />
-                        <path
-                          d="M11.07 8.86c.3-.43.75-.64 1.26-.56l1.56.24c.43.07.77.35.9.77l.54 1.73c.11.36.02.75-.25 1.02l-.77.78c-.18.18-.22.45-.09.68.74 1.3 1.77 2.38 3.03 3.19.23.15.52.14.72-.04l.82-.74c.29-.26.71-.34 1.06-.2l1.63.66c.4.16.67.53.68.96l.04 1.54c.01.5-.25.96-.69 1.2-.58.32-1.28.48-1.98.4-1.76-.2-3.71-1.32-5.55-3.16-1.83-1.83-2.96-3.78-3.16-5.54-.08-.71.08-1.41.4-1.99l.85-.94Z"
-                          fill="#fff"
-                        />
-                      </svg>
-                </div>
-
-                <div className="info-footer-copy">
-                  <strong>¿Tienes dudas o consultas?</strong>
-                  <span>Escríbenos por WhatsApp y te ayudaremos.</span>
-                </div>
-
-                <div className="info-modal-actions">
-                  <button type="button" className="info-whatsapp-button" onClick={openWhatsAppContact}>
-                    <span className="whatsapp-button-icon" aria-hidden="true">
-                      <svg viewBox="0 0 32 32" aria-hidden="true">
-                        <path
-                          d="M16 2.6C8.63 2.6 2.65 8.58 2.65 15.95c0 2.35.62 4.55 1.79 6.49L2.6 29.4l7.13-1.82a13.28 13.28 0 0 0 6.27 1.57h.01c7.36 0 13.34-5.98 13.34-13.34C29.35 8.58 23.37 2.6 16 2.6Z"
-                          fill="#25D366"
-                        />
-                        <path
-                          d="M11.07 8.86c.3-.43.75-.64 1.26-.56l1.56.24c.43.07.77.35.9.77l.54 1.73c.11.36.02.75-.25 1.02l-.77.78c-.18.18-.22.45-.09.68.74 1.3 1.77 2.38 3.03 3.19.23.15.52.14.72-.04l.82-.74c.29-.26.71-.34 1.06-.2l1.63.66c.4.16.67.53.68.96l.04 1.54c.01.5-.25.96-.69 1.2-.58.32-1.28.48-1.98.4-1.76-.2-3.71-1.32-5.55-3.16-1.83-1.83-2.96-3.78-3.16-5.54-.08-.71.08-1.41.4-1.99l.85-.94Z"
-                          fill="#fff"
-                        />
-                      </svg>
-                    </span>
-                    <span>Ir a WhatsApp</span>
-                    <span aria-hidden="true">↗</span>
-                  </button>
-
-                  <button type="button" className="info-catalog-button" onClick={() => { setInfoOpen(false); goHome(); }}>
-                    <Home size={18} />
-                    <span>Ir al inicio</span>
-                    <span aria-hidden="true">↗</span>
-                  </button>
-                </div>
-              </div>
-            </div>
+            <button
+              type="button"
+              className="popup-hotspot popup-hotspot-home"
+              onClick={() => {
+                setInfoOpen(false);
+                goHome();
+              }}
+              aria-label="Ir al inicio"
+            >
+              <span className="sr-only">Ir al inicio</span>
+            </button>
           </div>
         </div>
       )}
