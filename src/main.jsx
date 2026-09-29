@@ -114,7 +114,7 @@ function App() {
   const [products, setProducts] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("ALL");
   const [selectedFamily, setSelectedFamily] = useState("ALL");
-  const [selectedBestSellerFamily, setSelectedBestSellerFamily] = useState("ALL");
+  const [catalogSort, setCatalogSort] = useState("DEFAULT");
   const [search, setSearch] = useState("");
   const [searchFocused, setSearchFocused] = useState(false);
   const [activeSearchSuggestion, setActiveSearchSuggestion] = useState(-1);
@@ -133,7 +133,6 @@ function App() {
   const [promoTimerReset, setPromoTimerReset] = useState(0);
   const [promosPerPage, setPromosPerPage] = useState(4);
   const [bestSellerRowsByCategory, setBestSellerRowsByCategory] = useState({});
-  const [bestSellerPage, setBestSellerPage] = useState(0);
 
   useEffect(() => {
     const updatePromosPerPage = () => {
@@ -417,74 +416,6 @@ function App() {
 
   const currentBestSellerRows = bestSellerRowsByCategory[categoryForDisplay] || [];
 
-  const bestSellerProducts = useMemo(() => {
-    if (!groupMap[categoryForDisplay]) return [];
-
-    const allowedCategories = new Set(groupMap[categoryForDisplay].map(value => value.toUpperCase()));
-    const productsByBarcode = new Map(
-      products.map((product) => [normalizeBarcode(product.barcode), product])
-    );
-
-    return currentBestSellerRows
-      .filter((row) => allowedCategories.has(row.category.toUpperCase()))
-      .filter((row) => {
-        // Los más vendidos usan su propio filtro de familia, independiente
-        // del filtro del catálogo de productos.
-        if (categoryForDisplay === "DESTACADOS" || selectedBestSellerFamily === "ALL") return true;
-        return row.family.trim().toUpperCase() === selectedBestSellerFamily.trim().toUpperCase();
-      })
-      .sort((a, b) => b.quantitySold - a.quantitySold)
-      .map((row) => productsByBarcode.get(row.barcode))
-      .filter((product) => product && product.stock > 0)
-      .slice(0, 10);
-  }, [currentBestSellerRows, products, categoryForDisplay, selectedBestSellerFamily]);
-
-  const bestSellerTotalPages = Math.ceil(bestSellerProducts.length / promosPerPage);
-  const visibleBestSellerProducts = bestSellerProducts.slice(
-    bestSellerPage * promosPerPage,
-    (bestSellerPage + 1) * promosPerPage
-  );
-
-  useEffect(() => {
-    setBestSellerPage(page => Math.min(page, Math.max(0, bestSellerTotalPages - 1)));
-  }, [bestSellerTotalPages]);
-
-  // Los más vendidos se controlan manualmente.
-  // El único carrusel con movimiento automático es el de Inicio.
-  useEffect(() => {
-    if (!groupMap[categoryForDisplay] || bestSellerTotalPages <= 1) {
-      setBestSellerPage(0);
-    }
-  }, [categoryForDisplay, bestSellerTotalPages]);
-
-  function changeBestSellerPage(delta) {
-    setBestSellerPage(page => (page + delta + bestSellerTotalPages) % bestSellerTotalPages);
-  }
-
-  const availableBestSellerFamilies = useMemo(() => {
-    if (!groupMap[categoryForDisplay] || categoryForDisplay === "DESTACADOS") return [];
-
-    const allowedCategories = new Set(
-      groupMap[categoryForDisplay].map(value => value.toUpperCase())
-    );
-    const productsByBarcode = new Map(
-      products.map((product) => [normalizeBarcode(product.barcode), product])
-    );
-
-    return [...new Set(
-      currentBestSellerRows
-        .filter((row) => allowedCategories.has(row.category.toUpperCase()))
-        .filter((row) => row.quantitySold > 0)
-        .map((row) => ({
-          family: row.family.trim(),
-          product: productsByBarcode.get(row.barcode),
-        }))
-        .filter(({ family, product }) => family && product && product.stock > 0)
-        .map(({ family }) => family)
-    )].sort((a, b) => a.localeCompare(b, "es"));
-  }, [currentBestSellerRows, products, categoryForDisplay]);
-
-
   const availableFamilies = useMemo(() => {
     const categoryForFamilies = searchCategory || selectedCategory;
     const isSearchingFromInicio = Boolean(search.trim()) && categoryForFamilies === "ALL";
@@ -516,6 +447,18 @@ function App() {
     selectedFamily,
     familyFiltersExpanded
   ]);
+
+  // Ventas por código de barras para ordenar el catálogo por popularidad.
+  // El reporte de ventas se mantiene separado del catálogo y se cruza por código.
+  const salesByBarcode = useMemo(() => {
+    const sales = new Map();
+    currentBestSellerRows.forEach((row) => {
+      const barcode = normalizeBarcode(row.barcode);
+      if (!barcode) return;
+      sales.set(barcode, (sales.get(barcode) || 0) + (Number(row.quantitySold) || 0));
+    });
+    return sales;
+  }, [currentBestSellerRows]);
 
   // Destacados también funciona como una categoría del catálogo.
   // La sección superior de destacados se mantiene independiente.
@@ -558,9 +501,28 @@ function App() {
           if (a.id === searchSelectedProductId && b.id !== searchSelectedProductId) return -1;
           if (b.id === searchSelectedProductId && a.id !== searchSelectedProductId) return 1;
         }
-        return a.name.localeCompare(b.name, "es", { sensitivity: "base" });
+
+        if (catalogSort === "BEST_SELLERS") {
+          const salesA = salesByBarcode.get(normalizeBarcode(a.barcode)) || 0;
+          const salesB = salesByBarcode.get(normalizeBarcode(b.barcode)) || 0;
+          if (salesA !== salesB) return salesB - salesA;
+        }
+
+        if (catalogSort === "PRICE_ASC" && a.price !== b.price) {
+          return a.price - b.price;
+        }
+
+        if (catalogSort === "PRICE_DESC" && a.price !== b.price) {
+          return b.price - a.price;
+        }
+
+        if (catalogSort === "NAME") {
+          return a.name.localeCompare(b.name, "es", { sensitivity: "base" });
+        }
+
+        return 0;
       });
-  }, [products, selectedCategory, selectedFamily, search, searchCategory, searchSelectedProductId]);
+  }, [products, selectedCategory, selectedFamily, search, searchCategory, searchSelectedProductId, catalogSort, salesByBarcode]);
 
   const cartUnits = cart.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -602,20 +564,25 @@ function App() {
 
   function selectCategory(key) {
     setSelectedCategory(key);
-    setBestSellerPage(0);
     setSearchSelectedProductId(null);
     setSelectedFamily("ALL");
-    setSelectedBestSellerFamily("ALL");
+    setCatalogSort("DEFAULT");
     setFamilyFiltersExpanded(true);
     setSearch("");
     setCurrentPage(1);
-
   }
 
-  function selectBestSellerFamily(family) {
-    setSelectedBestSellerFamily(family);
-    setBestSellerPage(0);
-  }
+  // Cada cambio de categoría inicia el catálogo con filtros limpios.
+  // Esto evita que un orden/familia seleccionado en una categoría
+  // se arrastre a la siguiente categoría.
+  useEffect(() => {
+    setSelectedFamily("ALL");
+    setCatalogSort("DEFAULT");
+    setFamilyFiltersExpanded(true);
+    setCurrentPage(1);
+    setSearchSelectedProductId(null);
+  }, [selectedCategory]);
+
 
   function selectFamily(family) {
     setSelectedFamily(family);
@@ -623,7 +590,6 @@ function App() {
     setFamilyFiltersExpanded(true);
     setSearch("");
     setCurrentPage(1);
-    setBestSellerPage(0);
   }
 
   function goHome() {
@@ -972,52 +938,6 @@ ${lines.join("\n")}
                 </section>
               )}
 
-              {groupMap[categoryForDisplay] && (
-                <section className="best-sellers-section">
-                  <div className="section-head">
-                    <h2>Los más vendidos</h2>
-                    <span>{categoryForDisplay === "DESTACADOS" ? "10 productos más vendidos" : selectedBestSellerFamily === "ALL" ? "10 productos más vendidos" : `10 más vendidos · ${selectedBestSellerFamily}`}</span>
-                  </div>
-
-                  {categoryForDisplay !== "DESTACADOS" && availableBestSellerFamilies.length > 0 && (
-                    <div className="best-sellers-family-filter family-filter">
-                      <button className={selectedBestSellerFamily === "ALL" ? "selected" : ""} onClick={() => selectBestSellerFamily("ALL")}>TODOS</button>
-                      {availableBestSellerFamilies.map(f => (
-                        <button key={f} className={selectedBestSellerFamily === f ? "selected" : ""} onClick={() => selectBestSellerFamily(f)}>{f}</button>
-                      ))}
-                    </div>
-                  )}
-
-                  {bestSellerProducts.length > 0 ? (
-                    <>
-                      <div className="promo-carousel">
-                        {bestSellerTotalPages > 1 && (
-                          <button type="button" className="promo-arrow promo-arrow-left" onClick={() => changeBestSellerPage(-1)} aria-label="Productos más vendidos anteriores">←</button>
-                        )}
-                        <div className="product-grid promo-grid" key={`best-sellers-${categoryForDisplay}-${selectedFamily}-${bestSellerPage}`}>
-                          {visibleBestSellerProducts.map((product) => (
-                            <ProductCard key={product.id} product={product} onAdd={addToCart} onImageClick={(item) => { setImageProduct(item); setImageZoom(1); }} promo={false} />
-                          ))}
-                        </div>
-                        {bestSellerTotalPages > 1 && (
-                          <button type="button" className="promo-arrow promo-arrow-right" onClick={() => changeBestSellerPage(1)} aria-label="Siguientes productos más vendidos">→</button>
-                        )}
-                      </div>
-
-                      {bestSellerTotalPages > 1 && (
-                        <div className="promo-dots" aria-label="Páginas de productos más vendidos">
-                          {Array.from({ length: bestSellerTotalPages }).map((_, index) => (
-                            <button key={index} type="button" className={index === bestSellerPage ? "active" : ""} onClick={() => setBestSellerPage(index)} aria-label={`Ver más vendidos ${index + 1}`} />
-                          ))}
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <div className="best-sellers-empty">Aún no hay productos con ventas registradas para esta selección.</div>
-                  )}
-                </section>
-              )}
-
               <section id="products-section" className="products-head">
                 <div className="section-head">
                   <h2>{
@@ -1030,20 +950,44 @@ ${lines.join("\n")}
                   <span>{filteredProducts.length} productos</span>
                 </div>
 
-                {categoryForDisplay !== "ALL" && availableFamilies.length > 0 && (
-                  <div className="catalog-family-filter">
-                    <label htmlFor="catalog-family-select">Filtrar por familia</label>
-                    <div className="catalog-family-select-wrap">
-                      <select
-                        id="catalog-family-select"
-                        value={selectedFamily}
-                        onChange={(event) => selectFamily(event.target.value)}
-                      >
-                        <option value="ALL">TODOS</option>
-                        {availableFamilies.map((family) => (
-                          <option key={family} value={family}>{family}</option>
-                        ))}
-                      </select>
+                {categoryForDisplay !== "ALL" && (
+                  <div className="catalog-controls">
+                    {availableFamilies.length > 0 && (
+                      <div className="catalog-family-filter">
+                        <label htmlFor="catalog-family-select">Familia</label>
+                        <div className="catalog-family-select-wrap">
+                          <select
+                            id="catalog-family-select"
+                            value={selectedFamily}
+                            onChange={(event) => selectFamily(event.target.value)}
+                          >
+                            <option value="ALL">TODOS</option>
+                            {availableFamilies.map((family) => (
+                              <option key={family} value={family}>{family}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="catalog-family-filter catalog-sort-filter">
+                      <label htmlFor="catalog-sort-select">Ordenar por</label>
+                      <div className="catalog-family-select-wrap">
+                        <select
+                          id="catalog-sort-select"
+                          value={catalogSort}
+                          onChange={(event) => {
+                            setCatalogSort(event.target.value);
+                            setCurrentPage(1);
+                          }}
+                        >
+                          <option value="DEFAULT">Seleccionar</option>
+                          <option value="BEST_SELLERS">Más vendidos</option>
+                          <option value="PRICE_ASC">Precio: menor a mayor</option>
+                          <option value="PRICE_DESC">Precio: mayor a menor</option>
+                          <option value="NAME">Nombre: A–Z</option>
+                        </select>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -1235,7 +1179,7 @@ ${lines.join("\n")}
         </div>
       )}
 
-      {!cartOpen && (
+      {!cartOpen && !imageProduct && (
         <button
           className="cart-toggle"
           onClick={() => setCartOpen(true)}

@@ -5304,17 +5304,19 @@ input {
         font-size: 8px;
     }
 }
-/* Familia seleccionada dentro de la sección de más vendidos. */
-.best-sellers-family-filter {
-    margin: 0 0 16px;
+/* Controles del catálogo: familia + ordenamiento. */
+.catalog-controls {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    margin: -2px 0 18px;
+    flex-wrap: wrap;
 }
 
-/* Filtro de familias del catálogo: independiente de "Los más vendidos". */
 .catalog-family-filter {
     display: flex;
     align-items: center;
     gap: 10px;
-    margin: -2px 0 18px;
 }
 
 .catalog-family-filter label {
@@ -5406,9 +5408,16 @@ input {
 
 
 @media (max-width: 850px) {
+    .catalog-controls {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin: -2px 0 16px;
+    }
+
     .catalog-family-filter {
         display: block;
-        margin: -2px 0 16px;
+        min-width: 0;
     }
 
     .catalog-family-filter label {
@@ -5425,5 +5434,11 @@ input {
     .catalog-family-filter select {
         height: 42px;
         font-size: 12px;
+    }
+}
+
+@media (max-width: 520px) {
+    .catalog-controls {
+        grid-template-columns: 1fr;
     }
 }
