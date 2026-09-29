@@ -10,10 +10,11 @@
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",
-    "lucide-react": "latest",
+    "vite": "latest",
     "react": "latest",
     "react-dom": "latest",
-    "vite": "latest",
-    "xlsx": "^0.18.5"
-  }
+    "lucide-react": "latest",
+    "xlsx": "latest"
+  },
+  "devDependencies": {}
 }

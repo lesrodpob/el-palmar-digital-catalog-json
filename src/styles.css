@@ -24,7 +24,7 @@ input {
     height: 100vh;
     display: grid;
     grid-template-columns: 200px minmax(0, 1fr);
-    overflow: hidden;
+    overflow: visible;
 }
 
 /* =========================
@@ -115,6 +115,22 @@ input {
     display: block;
     width: 100%;
     height: auto;
+}
+
+/* Banner dinámico de categoría: reemplaza visualmente el banner de Inicio. */
+.category-hero {
+    background: #f6f0e1;
+}
+
+.category-banner-full {
+    min-height: 260px;
+    margin-bottom: 0;
+    border-radius: 0;
+    box-shadow: none;
+}
+
+.category-banner-full .category-banner-content {
+    min-height: 260px;
 }
 
 /* =========================
@@ -375,6 +391,7 @@ input {
         opacity: 0;
         transform: translateY(4px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -382,14 +399,14 @@ input {
 }
 
 .promo-arrow {
-    flex: 0 0 38px;
-    width: 38px;
-    height: 58px;
+    flex: 0 0 68px;
+    width: 68px;
+    height: 68px;
     border: 1px solid #d8dfd5;
-    border-radius: 10px;
+    border-radius: 50%;
     background: #fff;
-    color: #245034;
-    font-size: 25px;
+    color: #2f7eea;
+    font-size: 36px;
     line-height: 1;
     cursor: pointer;
     display: flex;
@@ -461,6 +478,83 @@ input {
 .promo-grid .product-info em.stock-ok,
 .promo-grid .product-info em.stock-no {
     margin-top: 3px;
+}
+
+/* =========================
+   CATEGORY PAGE / BANNERS
+   ========================= */
+
+.category-page-intro {
+    margin-bottom: 24px;
+}
+
+.category-banner {
+    position: relative;
+    min-height: 190px;
+    margin-bottom: 22px;
+    overflow: hidden;
+    border-radius: 18px;
+    background: linear-gradient(135deg, #173d29 0%, #245034 55%, #8b6b2e 100%);
+    box-shadow: 0 8px 22px #183b2912;
+}
+
+.category-banner img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.category-banner::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, #123322d9 0%, #173d297d 52%, #173d2926 100%);
+    pointer-events: none;
+}
+
+.category-banner-content {
+    position: relative;
+    z-index: 2;
+    min-height: 190px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 28px 34px;
+    color: #fff;
+}
+
+.category-banner-content span {
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: .16em;
+    color: #e4c16c;
+    margin-bottom: 8px;
+}
+
+.category-banner-content strong {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: clamp(30px, 4vw, 48px);
+    line-height: 1;
+    font-weight: 600;
+}
+
+.category-banner-content p {
+    max-width: 480px;
+    margin: 10px 0 0;
+    font-size: 14px;
+    line-height: 1.45;
+    color: #f4f1e7;
+}
+
+.best-sellers-section {
+    margin-bottom: 26px;
+}
+
+.best-sellers-section .section-head {
+    margin-bottom: 10px;
 }
 
 /* =========================
@@ -667,8 +761,15 @@ input {
 }
 
 @keyframes infoModalIn {
-    from { opacity: 0; transform: translateY(10px) scale(.98); }
-    to { opacity: 1; transform: translateY(0) scale(1); }
+    from {
+        opacity: 0;
+        transform: translateY(10px) scale(.98);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
 }
 
 .info-modal-banner {
@@ -706,7 +807,7 @@ input {
 }
 
 .info-modal-brand small {
-    color: rgba(255,255,255,.72);
+    color: rgba(255, 255, 255, .72);
     font-size: 9px;
 }
 
@@ -717,7 +818,7 @@ input {
     z-index: 1;
 }
 
-.info-modal-title > span {
+.info-modal-title>span {
     color: #f3ddb0;
     font-size: 9px;
     font-weight: 700;
@@ -738,9 +839,9 @@ input {
     right: 19px;
     width: 36px;
     height: 36px;
-    border: 1px solid rgba(255,255,255,.3);
+    border: 1px solid rgba(255, 255, 255, .3);
     border-radius: 50%;
-    background: rgba(255,255,255,.1);
+    background: rgba(255, 255, 255, .1);
     color: #fff;
     display: flex;
     align-items: center;
@@ -776,7 +877,9 @@ input {
     justify-content: center;
 }
 
-.info-card-copy { min-width: 0; }
+.info-card-copy {
+    min-width: 0;
+}
 
 .info-label {
     display: block;
@@ -841,9 +944,12 @@ input {
     gap: 2px;
 }
 
-.info-modal-footer strong { font-size: 12px; }
+.info-modal-footer strong {
+    font-size: 12px;
+}
+
 .info-modal-footer span {
-    color: rgba(255,255,255,.78);
+    color: rgba(255, 255, 255, .78);
     font-size: 10px;
 }
 
@@ -874,6 +980,7 @@ input {
 
 .cart-close {
     position: static;
+    flex-shrink: 0;
     flex: none;
     width: 34px;
     height: 34px;
@@ -895,7 +1002,7 @@ input {
     right: 0;
     top: 50%;
     transform: translateY(-50%);
-    z-index: 19;
+    z-index: 1000;
     min-width: 58px;
     height: 118px;
     padding: 12px 9px;
@@ -910,6 +1017,18 @@ input {
     align-items: center;
     justify-content: center;
     gap: 7px;
+}
+
+/* La pestaña "Ver pedido" debe permanecer visible sobre el contenido
+   aunque el catálogo interno haga scroll. */
+@media (min-width: 851px) {
+    .cart-toggle {
+        position: fixed;
+        right: 0;
+        top: 50%;
+        bottom: auto;
+        z-index: 1000;
+    }
 }
 
 .cart-toggle span {
@@ -945,6 +1064,7 @@ input {
     display: flex;
     align-items: center;
     gap: 12px;
+    flex-wrap: nowrap;
     border-bottom: 1px solid #eee9df;
     font-size: 22px;
 }
@@ -957,6 +1077,7 @@ input {
 
 .cart-head strong {
     min-width: 0;
+    white-space: nowrap;
     font-family: "Playfair Display", Georgia, serif;
     font-size: 24px;
     font-weight: 700;
@@ -964,6 +1085,7 @@ input {
 
 .cart-head span {
     margin-left: auto;
+    flex-shrink: 0;
     background: #234d2f;
     color: white;
     width: 38px;
@@ -1130,6 +1252,28 @@ input {
     height: 20px;
 }
 
+.continue-catalog {
+    display: none;
+    margin: 0 15px 10px;
+    width: calc(100% - 30px);
+    height: 48px;
+    border: 1px solid #31543b;
+    border-radius: 10px;
+    background: #fff;
+    color: #31543b;
+    font-size: 14px;
+    font-weight: 600;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    cursor: pointer;
+}
+
+.continue-catalog svg {
+    width: 18px;
+    height: 18px;
+}
+
 .clear {
     background: transparent;
     color: #687269;
@@ -1209,6 +1353,11 @@ input {
    ========================= */
 
 @media (max-width: 850px) {
+    /* Oculta solo la barra de categorías mientras "Tu pedido" está abierto. */
+    .sidebar.sidebar-cart-open {
+        display: none;
+    }
+
     .app {
         display: block;
         height: 100vh;
@@ -1437,10 +1586,11 @@ input {
     }
 
     .promo-arrow {
-        flex-basis: 30px;
-        width: 30px;
-        height: 48px;
-        font-size: 20px;
+        flex-basis: 62px;
+        width: 62px;
+        height: 62px;
+        font-size: 34px;
+        border-radius: 50%;
     }
 
     .product-info b {
@@ -1454,6 +1604,46 @@ input {
     .product-info strong,
     .promo-grid .product-info strong {
         font-size: 16px;
+    }
+
+    .category-banner {
+        min-height: 150px;
+        margin-bottom: 18px;
+        border-radius: 14px;
+    }
+
+    .category-banner-full {
+        min-height: 190px;
+        margin-bottom: 0;
+        border-radius: 0;
+    }
+
+    .category-banner-full .category-banner-content {
+        min-height: 190px;
+    }
+
+    .category-banner-content {
+        min-height: 150px;
+        padding: 22px 20px;
+    }
+
+    .category-banner-content span {
+        font-size: 8px;
+        margin-bottom: 6px;
+    }
+
+    .category-banner-content strong {
+        font-size: 30px;
+    }
+
+    .category-banner-content p {
+        max-width: 90%;
+        margin-top: 7px;
+        font-size: 11px;
+    }
+
+    .best-sellers-section {
+        margin-bottom: 20px;
     }
 
     .family-filter {
@@ -1507,10 +1697,8 @@ input {
     }
 
     .cart-close {
-        width: 32px;
-        height: 32px;
-        margin-left: 6px;
-        font-size: 21px;
+        position: relative;
+        top: 5px;
     }
 
     .cart-toggle {
@@ -1590,6 +1778,8 @@ input {
         width: 34px;
         height: 34px;
         font-size: 14px;
+        position: relative;
+        top: 5px;
     }
 
     .cart-row {
@@ -1640,12 +1830,17 @@ input {
     }
 
     .whatsapp,
+    .continue-catalog,
     .clear {
         height: 48px;
         font-size: 13px;
         margin-left: 12px;
         margin-right: 12px;
         width: calc(100% - 24px);
+    }
+
+    .continue-catalog {
+        display: flex;
     }
 
     .notice {
@@ -1657,7 +1852,7 @@ input {
 /* =========================
    SMALL PHONES / <= 600px
    ========================= */
-   
+
 
 @media (max-width: 600px) {
     .sidebar {
@@ -1921,7 +2116,7 @@ input {
 .info-footer-icon {
     width: 40px;
     height: 40px;
-    border: 1px solid rgba(255,255,255,.28);
+    border: 1px solid rgba(255, 255, 255, .28);
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -1941,7 +2136,7 @@ input {
 }
 
 .info-footer-copy span {
-    color: rgba(255,255,255,.78);
+    color: rgba(255, 255, 255, .78);
     font-size: 10px;
     line-height: 1.35;
 }
@@ -1969,13 +2164,13 @@ input {
 }
 
 .info-whatsapp-button {
-    border: 1px solid rgba(255,255,255,.3);
-    background: rgba(255,255,255,.13);
+    border: 1px solid rgba(255, 255, 255, .3);
+    background: rgba(255, 255, 255, .13);
     color: #fff;
 }
 
 .info-whatsapp-button:hover {
-    background: rgba(255,255,255,.2);
+    background: rgba(255, 255, 255, .2);
 }
 
 .info-catalog-button {
@@ -2092,7 +2287,7 @@ input {
         right: 48px;
     }
 
-    .info-modal-title > span {
+    .info-modal-title>span {
         font-size: 8px;
     }
 
@@ -2383,7 +2578,7 @@ input {
         bottom: 13px;
     }
 
-    .info-modal-title > span {
+    .info-modal-title>span {
         font-size: 7px;
     }
 
@@ -2565,7 +2760,7 @@ input {
     font-size: 22px;
 }
 
-.info-brand-lockup > div:last-child {
+.info-brand-lockup>div:last-child {
     display: flex;
     flex-direction: column;
     line-height: 1;
@@ -2579,7 +2774,7 @@ input {
 
 .info-brand-lockup small {
     margin-top: 4px;
-    color: rgba(255,255,255,.76);
+    color: rgba(255, 255, 255, .76);
     font-size: 8px;
 }
 
@@ -2700,8 +2895,8 @@ input {
     height: 36px;
     padding: 6px 10px;
     border-radius: 9px;
-    border: 1px solid rgba(255,255,255,.28);
-    background: rgba(255,255,255,.12);
+    border: 1px solid rgba(255, 255, 255, .28);
+    background: rgba(255, 255, 255, .12);
     color: #fff;
     display: flex;
     align-items: center;
@@ -2712,7 +2907,7 @@ input {
 }
 
 .info-modal-final .info-whatsapp-button:hover {
-    background: rgba(255,255,255,.2);
+    background: rgba(255, 255, 255, .2);
 }
 
 .info-modal-final .info-whatsapp-button span:last-child {
@@ -2756,7 +2951,7 @@ input {
         bottom: 16px;
     }
 
-    .info-modal-final .info-modal-title > span {
+    .info-modal-final .info-modal-title>span {
         font-size: 7.5px;
     }
 
@@ -2864,7 +3059,7 @@ input {
         right: 45px;
     }
 
-    .info-modal-final .info-modal-title > span {
+    .info-modal-final .info-modal-title>span {
         font-size: 6.5px;
     }
 
@@ -3090,7 +3285,7 @@ input {
         right: 42px;
     }
 
-    .info-modal-final .info-modal-title > span {
+    .info-modal-final .info-modal-title>span {
         font-size: 6.2px;
     }
 
@@ -3152,13 +3347,13 @@ input {
 }
 
 .info-modal-final .info-whatsapp-button {
-    border: 1px solid rgba(255,255,255,.28);
-    background: rgba(255,255,255,.12);
+    border: 1px solid rgba(255, 255, 255, .28);
+    background: rgba(255, 255, 255, .12);
     color: #fff;
 }
 
 .info-modal-final .info-catalog-button {
-    border: 1px solid rgba(255,255,255,.22);
+    border: 1px solid rgba(255, 255, 255, .22);
     background: #f8f5ec;
     color: #31543b;
 }
@@ -3961,6 +4156,7 @@ input {
 }
 
 @media (max-width: 380px) {
+
     .info-modal-final .info-whatsapp-button,
     .info-modal-final .info-catalog-button {
         width: 86px !important;
@@ -4179,7 +4375,7 @@ input {
     line-height: 1.1 !important;
 }
 
-.info-modal-final .payment-logo-item > span:last-child {
+.info-modal-final .payment-logo-item>span:last-child {
     white-space: normal !important;
     overflow-wrap: break-word !important;
 }
@@ -4372,32 +4568,32 @@ input {
 
 /* JSON product images */
 .product-placeholder {
-  position: relative;
-  overflow: hidden;
+    position: relative;
+    overflow: hidden;
 }
 
 .product-image {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  object-position: center;
-  border-radius: 8px;
-  background: transparent;
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: center;
+    border-radius: 8px;
+    background: transparent;
 }
 
 .cart-thumb {
-  position: relative;
-  overflow: hidden;
+    position: relative;
+    overflow: hidden;
 }
 
 .cart-product-image {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  object-position: center;
-  border-radius: 8px;
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: center;
+    border-radius: 8px;
 }
 
 /* =========================================================
@@ -4471,6 +4667,7 @@ input {
         opacity: 0;
         transform: scale(.97);
     }
+
     to {
         opacity: 1;
         transform: scale(1);
@@ -4486,7 +4683,7 @@ input {
     height: 38px;
     border: 1px solid #ddd7ca;
     border-radius: 50%;
-    background: rgba(255,255,255,.94);
+    background: rgba(255, 255, 255, .94);
     color: #31543b;
     font-size: 25px;
     line-height: 1;
@@ -4494,7 +4691,7 @@ input {
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    box-shadow: 0 3px 12px rgba(32,56,42,.12);
+    box-shadow: 0 3px 12px rgba(32, 56, 42, .12);
 }
 
 .product-image-modal-close:hover {
@@ -4664,7 +4861,7 @@ input {
         font-size: 9px;
     }
 
-    .product-image-modal-footer > span:first-child {
+    .product-image-modal-footer>span:first-child {
         display: none;
     }
 
@@ -4863,6 +5060,7 @@ input {
         font-size: 9px;
     }
 }
+
 /* =========================
    POPUP INFORMACIÓN — RENDER FINAL
    La pieza gráfica es el contenido visual del popup y los botones
@@ -5090,7 +5288,7 @@ input {
     color: #fff;
     font: 700 9px/1 "DM Sans", Arial, sans-serif;
     letter-spacing: .02em;
-    box-shadow: 0 3px 10px rgba(0,0,0,.14);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, .14);
     pointer-events: none;
 }
 
@@ -5104,5 +5302,128 @@ input {
         left: 7px;
         padding: 5px 7px;
         font-size: 8px;
+    }
+}
+/* Familia seleccionada dentro de la sección de más vendidos. */
+.best-sellers-family-filter {
+    margin: 0 0 16px;
+}
+
+/* Filtro de familias del catálogo: independiente de "Los más vendidos". */
+.catalog-family-filter {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: -2px 0 18px;
+}
+
+.catalog-family-filter label {
+    color: #6f786f;
+    font: 600 12px "DM Sans", Arial, sans-serif;
+    white-space: nowrap;
+}
+
+.catalog-family-select-wrap {
+    position: relative;
+    min-width: 220px;
+}
+
+.catalog-family-select-wrap::after {
+    content: "⌄";
+    position: absolute;
+    right: 13px;
+    top: 50%;
+    transform: translateY(-55%);
+    color: #31543b;
+    pointer-events: none;
+    font-size: 16px;
+}
+
+.catalog-family-filter select {
+    appearance: none;
+    width: 100%;
+    height: 40px;
+    padding: 0 38px 0 13px;
+    border: 1px solid #d8ddd4;
+    border-radius: 10px;
+    background: #fff;
+    color: #31543b;
+    font: 600 12px "DM Sans", Arial, sans-serif;
+    cursor: pointer;
+    outline: none;
+    box-shadow: 0 2px 6px #00000008;
+}
+
+.catalog-family-filter select:focus {
+    border-color: #a9bea9;
+    box-shadow: 0 0 0 3px #31543b12;
+}
+
+.best-sellers-empty {
+    border: 1px dashed #d8d1c3;
+    border-radius: 14px;
+    padding: 24px;
+    text-align: center;
+    color: #7f877f;
+    background: rgba(255,255,255,.45);
+    font-size: 13px;
+}
+
+/* Carrusel en celular: flechas grandes, gruesas y centradas verticalmente. */
+@media (max-width: 850px) {
+    .promo-carousel {
+        position: relative;
+        padding: 0 30px;
+    }
+
+    .promo-arrow {
+        position: absolute;
+        top: 50%;
+        width: 54px;
+        height: 54px;
+        flex: 0 0 54px;
+        padding: 0;
+        transform: translateY(-50%);
+        font-size: 34px;
+        font-weight: 800;
+        line-height: 1;
+        border-radius: 50%;
+        z-index: 5;
+    }
+
+    .promo-arrow:hover {
+        transform: translateY(-50%) scale(1.04);
+    }
+
+    .promo-arrow-left {
+        left: 2px;
+    }
+
+    .promo-arrow-right {
+        right: 2px;
+    }
+}
+
+
+@media (max-width: 850px) {
+    .catalog-family-filter {
+        display: block;
+        margin: -2px 0 16px;
+    }
+
+    .catalog-family-filter label {
+        display: block;
+        margin-bottom: 7px;
+        font-size: 11px;
+    }
+
+    .catalog-family-select-wrap {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .catalog-family-filter select {
+        height: 42px;
+        font-size: 12px;
     }
 }
