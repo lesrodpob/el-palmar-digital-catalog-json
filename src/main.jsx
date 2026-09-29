@@ -580,7 +580,6 @@ function App() {
     setCatalogSort("DEFAULT");
     setFamilyFiltersExpanded(true);
     setCurrentPage(1);
-    setSearchSelectedProductId(null);
   }, [selectedCategory]);
 
 
@@ -665,13 +664,18 @@ function App() {
       i => `• ${i.name} x${i.quantity} — ${money(i.price * i.quantity)}`
     );
 
+    const discountLine = iceDiscount > 0
+      ? `\u{1F3AF} Descuento por volumen en hielo: -${money(iceDiscount)}\n`
+      : "";
+
     const message = `\u{1F3EA} Hola Distribuidora El Palmar
 
 \u{1F6D2} Quisiera cotizar el siguiente pedido:
 
 ${lines.join("\n")}
 
-\u{1F4B0} Total: ${money(cartTotal)}
+\u{1F4B5} Subtotal: ${money(cartSubtotal)}
+${discountLine}\u{1F4B0} Total con descuento: ${money(cartTotal)}
 
 \u{1F4CB} Quedo atento/a para confirmar el pedido.
 ¡Muchas gracias! \u{1F60A}`;
@@ -978,6 +982,7 @@ ${lines.join("\n")}
                           value={catalogSort}
                           onChange={(event) => {
                             setCatalogSort(event.target.value);
+                            setSearchSelectedProductId(null);
                             setCurrentPage(1);
                           }}
                         >
