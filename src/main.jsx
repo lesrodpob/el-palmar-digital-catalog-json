@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   Home, Wine, Martini, Beer, CupSoda, Snowflake,
-  Search, ShoppingCart, MessageCircle, Trash2,
+  Search, ShoppingCart, MessageCircle, Trash2, Camera,
   Minus, Plus, Package, Truck, Percent, Headphones, ChevronRight,
   LoaderCircle, AlertCircle
 , Banknote, FileText, CreditCard, ArrowLeftRight} from "lucide-react";
@@ -68,6 +68,10 @@ function App() {
   const [selectedCategory, setSelectedCategory] = useState("ALL");
   const [selectedFamily, setSelectedFamily] = useState("ALL");
   const [search, setSearch] = useState("");
+  const [searchFocused, setSearchFocused] = useState(false);
+  const [activeSearchSuggestion, setActiveSearchSuggestion] = useState(-1);
+  const [searchSelectedProductId, setSearchSelectedProductId] = useState(null);
+  const [familyFiltersExpanded, setFamilyFiltersExpanded] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [cart, setCart] = useState([]);
   const [cartOpen, setCartOpen] = useState(false);
@@ -90,26 +94,6 @@ function App() {
     window.addEventListener("resize", updatePromosPerPage);
     return () => window.removeEventListener("resize", updatePromosPerPage);
   }, []);
-
-  useEffect(() => {
-    setCurrentPage(1);
-    setSelectedFamily("ALL");
-  }, [search]);
-
-  useEffect(() => {
-    const query = search.trim();
-
-    if (!query) return;
-
-    const timer = setTimeout(() => {
-      document.getElementById("products-section")?.scrollIntoView({
-        behavior: "smooth",
-        block: "start"
-      });
-    }, 350);
-
-    return () => clearTimeout(timer);
-  }, [search]);
 
   useEffect(() => {
     if (!imageProduct) return;
@@ -194,6 +178,126 @@ function App() {
     setImageZoom(1);
   }
 
+  const searchSuggestions = useMemo(() => {
+    const query = search.toLowerCase().trim();
+
+    if (!query) return [];
+
+    const seen = new Set();
+
+    const catalogCategories = new Set(
+      Object.values(groupMap).flat()
+    );
+
+    return products
+      .filter(p => {
+        // El buscador solo debe sugerir productos pertenecientes a las
+        // categorías que realmente forman parte del catálogo.
+        if (p.stock <= 0 || !catalogCategories.has(p.category)) return false;
+
+        return [p.name, p.family, p.category, p.barcode]
+          .some(v => String(v ?? "").toLowerCase().includes(query));
+      })
+      .sort((a, b) => {
+        const aName = a.name.toLowerCase();
+        const bName = b.name.toLowerCase();
+
+        const aStarts = aName.startsWith(query) ? 0 : 1;
+        const bStarts = bName.startsWith(query) ? 0 : 1;
+
+        if (aStarts !== bStarts) return aStarts - bStarts;
+        return aName.localeCompare(bName, "es", { sensitivity: "base" });
+      })
+      .filter(p => {
+        const key = p.name.toLowerCase();
+
+        if (seen.has(key)) return false;
+
+        seen.add(key);
+        return true;
+      })
+      .slice(0, 6);
+  }, [products, search]);
+
+  const showSearchSuggestions =
+    searchFocused &&
+    search.trim().length > 0 &&
+    searchSuggestions.length > 0;
+
+  function commitSearchResult(product = null) {
+    const query = search.toLowerCase().trim();
+
+    const target =
+      product ||
+      products.find(p =>
+        p.stock > 0 &&
+        Object.values(groupMap).flat().includes(p.category) &&
+        p.name.toLowerCase() === query
+      ) ||
+      searchSuggestions[0];
+
+    if (!target) return;
+
+    // Guarda el producto que originó la búsqueda para destacarlo dentro de su familia.
+    setSearchSelectedProductId(target.id);
+
+    const category = Object.entries(groupMap).find(([, categories]) =>
+      categories.includes(target.category)
+    )?.[0];
+
+    if (category) {
+      setSelectedCategory(category);
+    }
+
+    // La búsqueda identifica el producto, pero una vez encontrado
+    // el filtro pasa a categoría + familia.
+    setSelectedFamily(target.family || "ALL");
+    setFamilyFiltersExpanded(false);
+    setCurrentPage(1);
+    setSearch("");
+    setSearchFocused(false);
+    setActiveSearchSuggestion(-1);
+
+    setTimeout(() => {
+      const targetCard = document.getElementById(`product-${target.id}`);
+
+      if (targetCard) {
+        targetCard.scrollIntoView({
+          behavior: "smooth",
+          block: "center"
+        });
+      } else {
+        document.getElementById("products-section")?.scrollIntoView({
+          behavior: "smooth",
+          block: "start"
+        });
+      }
+    }, 120);
+  }
+
+  function scrollToSearchResults() {
+    commitSearchResult();
+  }
+
+  function selectSearchSuggestion(product) {
+    commitSearchResult(product);
+  }
+
+  function highlightSearchMatch(text) {
+    const query = search.trim();
+
+    if (!query) return text;
+
+    const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const parts = String(text).split(new RegExp(`(${escapedQuery})`, "ig"));
+
+    return parts.map((part, index) =>
+      part.toLowerCase() === query.toLowerCase()
+        ? <strong key={index}>{part}</strong>
+        : <React.Fragment key={index}>{part}</React.Fragment>
+    );
+  }
+
   const searchCategory = useMemo(() => {
     const query = search.toLowerCase().trim();
 
@@ -244,13 +348,25 @@ function App() {
               .flatMap(([, categories]) => categories))
       : groupMap[categoryForFamilies];
 
+    // Después de una búsqueda, mostramos únicamente la familia
+    // encontrada. "Todas las familias" permite volver a expandir la lista.
+    if (!familyFiltersExpanded && selectedFamily !== "ALL") {
+      return [selectedFamily];
+    }
+
     const families = products
       .filter(p => cats?.includes(p.category))
       .map(p => p.family)
       .filter(Boolean);
 
     return [...new Set(families)].sort((a, b) => a.localeCompare(b, "es"));
-  }, [products, selectedCategory, searchCategory]);
+  }, [
+    products,
+    selectedCategory,
+    searchCategory,
+    selectedFamily,
+    familyFiltersExpanded
+  ]);
 
   // Destacados también funciona como una categoría del catálogo.
   // La sección superior de destacados se mantiene independiente.
@@ -272,8 +388,14 @@ function App() {
         const matchesCategory = !cats || cats.includes(p.category);
         const matchesStock = p.stock > 0;
         const matchesFamily = selectedFamily === "ALL" || p.family === selectedFamily;
-        const matchesSearch = !query || [p.name, p.family, p.category, p.barcode]
-          .some(v => v.toLowerCase().includes(query));
+        // Si el usuario selecciona una familia después de buscar,
+        // la familia pasa a ser el filtro principal y el texto del buscador
+        // deja de limitar los resultados.
+        const matchesSearch =
+          selectedFamily !== "ALL" ||
+          !query ||
+          [p.name, p.family, p.category, p.barcode]
+            .some(v => v.toLowerCase().includes(query));
         const showDestacados = categoryForSearch === "DESTACADOS" || isSearchingFromInicio;
         return matchesCategory &&
           matchesStock &&
@@ -282,8 +404,14 @@ function App() {
           p.category !== "PROMOCIONES" &&
           (showDestacados || p.category !== "DESTACADOS");
       })
-      .sort((a, b) => a.name.localeCompare(b.name, "es", { sensitivity: "base" }));
-  }, [products, selectedCategory, selectedFamily, search, searchCategory]);
+      .sort((a, b) => {
+        if (searchSelectedProductId) {
+          if (a.id === searchSelectedProductId && b.id !== searchSelectedProductId) return -1;
+          if (b.id === searchSelectedProductId && a.id !== searchSelectedProductId) return 1;
+        }
+        return a.name.localeCompare(b.name, "es", { sensitivity: "base" });
+      });
+  }, [products, selectedCategory, selectedFamily, search, searchCategory, searchSelectedProductId]);
 
   const cartUnits = cart.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -325,15 +453,26 @@ function App() {
 
   function selectCategory(key) {
     setSelectedCategory(key);
-    setCurrentPage(1);
+    setSearchSelectedProductId(null);
     setSelectedFamily("ALL");
-    setTimeout(() => document.getElementById("products-section")?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+    setFamilyFiltersExpanded(true);
+    setSearch("");
+    setCurrentPage(1);
+
+    setTimeout(() => {
+      document.getElementById("products-section")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+      });
+    }, 50);
   }
 
   function goHome() {
     setSelectedCategory("ALL");
+    setSearchSelectedProductId(null);
     setCurrentPage(1);
     setSelectedFamily("ALL");
+    setFamilyFiltersExpanded(true);
     setSearch("");
     document.querySelector(".main")?.scrollTo({
       top: 0,
@@ -461,17 +600,114 @@ ${lines.join("\n")}
       <main className="main">
         {hero}
         <div className="search-wrap">
-          <Search size={27} />
-          <input
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            onKeyDown={e => {
-              if (e.key === "Enter" && search.trim()) {
-                scrollToProducts();
-              }
-            }}
-            placeholder="Buscar productos, marcas o categorías..."
-          />
+          <Search size={27} className="search-main-icon" />
+
+          <div className="search-box">
+            <input
+              value={search}
+              onFocus={() => {
+                setSearchFocused(true);
+                setActiveSearchSuggestion(-1);
+
+                if (search.trim()) {
+                  setSelectedFamily("ALL");
+                  setFamilyFiltersExpanded(true);
+                  setSelectedCategory("ALL");
+                  setCurrentPage(1);
+                }
+              }}
+              onBlur={() => {
+                setTimeout(() => setSearchFocused(false), 120);
+              }}
+              onChange={e => {
+                const value = e.target.value;
+
+                setSearch(value);
+                setActiveSearchSuggestion(-1);
+                if (value.trim()) setSearchSelectedProductId(null);
+
+                // Si el usuario empieza una nueva búsqueda después de haber
+                // seleccionado una familia, liberamos ese filtro para que
+                // la nueva búsqueda sea completamente independiente.
+                if (value.trim()) {
+                  setSelectedFamily("ALL");
+                  setFamilyFiltersExpanded(true);
+                  setSelectedCategory("ALL");
+                  setCurrentPage(1);
+                  setSearchFocused(true);
+                }
+              }}
+              onKeyDown={e => {
+                if (!showSearchSuggestions) {
+                  if (e.key === "Enter" && search.trim()) {
+                    scrollToSearchResults();
+                  }
+                  return;
+                }
+
+                if (e.key === "ArrowDown") {
+                  e.preventDefault();
+                  setActiveSearchSuggestion(index =>
+                    index < searchSuggestions.length - 1 ? index + 1 : 0
+                  );
+                }
+
+                if (e.key === "ArrowUp") {
+                  e.preventDefault();
+                  setActiveSearchSuggestion(index =>
+                    index > 0 ? index - 1 : searchSuggestions.length - 1
+                  );
+                }
+
+                if (e.key === "Enter") {
+                  e.preventDefault();
+
+                  if (activeSearchSuggestion >= 0) {
+                    selectSearchSuggestion(
+                      searchSuggestions[activeSearchSuggestion]
+                    );
+                  } else {
+                    scrollToSearchResults();
+                  }
+                }
+
+                if (e.key === "Escape") {
+                  setSearchFocused(false);
+                  setActiveSearchSuggestion(-1);
+                }
+              }}
+              placeholder="Buscar productos, marcas o categorías..."
+              aria-autocomplete="list"
+              aria-controls="search-suggestions"
+              aria-expanded={showSearchSuggestions}
+            />
+
+            {showSearchSuggestions && (
+              <div
+                id="search-suggestions"
+                className="search-suggestions"
+                role="listbox"
+                aria-label="Sugerencias de búsqueda"
+              >
+                {searchSuggestions.map((product, index) => (
+                  <button
+                    key={product.id}
+                    type="button"
+                    className={`search-suggestion ${
+                      activeSearchSuggestion === index ? "active" : ""
+                    }`}
+                    onMouseDown={e => e.preventDefault()}
+                    onClick={() => selectSearchSuggestion(product)}
+                    role="option"
+                    aria-selected={activeSearchSuggestion === index}
+                  >
+                    <Search size={23} />
+                    <span>{highlightSearchMatch(product.name)}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="info-trigger-wrap">
@@ -570,6 +806,9 @@ ${lines.join("\n")}
                     className={selectedFamily === "ALL" ? "selected" : ""}
                     onClick={() => {
                       setSelectedFamily("ALL");
+                      setSearchSelectedProductId(null);
+                      setFamilyFiltersExpanded(true);
+                      setSearch("");
                       setCurrentPage(1);
                       setTimeout(() => {
                         document.getElementById("products-section")?.scrollIntoView({
@@ -579,7 +818,7 @@ ${lines.join("\n")}
                       }, 50);
                     }}
                   >
-                    Todas las familias
+                    TODOS
                   </button>
                   {availableFamilies.map(f => (
                     <button
@@ -587,6 +826,8 @@ ${lines.join("\n")}
                       className={selectedFamily === f ? "selected" : ""}
                       onClick={() => {
                         setSelectedFamily(f);
+                        setSearchSelectedProductId(null);
+                        setFamilyFiltersExpanded(true);
                         setCurrentPage(1);
                         setTimeout(() => {
                           document.getElementById("products-section")?.scrollIntoView({
@@ -641,7 +882,7 @@ ${lines.join("\n")}
                   <>
                     <div className="product-grid">
                       {paginatedProducts.map(p => (
-                        <ProductCard key={p.id} product={p} onAdd={addToCart} onImageClick={(product) => { setImageProduct(product); setImageZoom(1); }} />
+                        <ProductCard key={p.id} product={p} onAdd={addToCart} onImageClick={(product) => { setImageProduct(product); setImageZoom(1); }} searchResult={p.id === searchSelectedProductId} />
                       ))}
                     </div>
 
@@ -766,7 +1007,7 @@ ${lines.join("\n")}
               <div className="product-image-modal-price">
                 <span>{money(imageProduct.price)}</span>
                 <small className={imageProduct.stock > 0 ? "stock-ok" : "stock-no"}>
-                  {imageProduct.stock > 0 ? `• En stock (${Math.floor(imageProduct.stock)})` : "• Sin stock"}
+                  {imageProduct.stock > 0 ? "• En stock" : "• Sin stock"}
                 </small>
               </div>
               <button
@@ -879,7 +1120,7 @@ ${lines.join("\n")}
           >
             <img
               className="info-modal-render-image"
-              src="/el-palmar-popup-render.png"
+              src="/el-palmar-popup-inicio.png"
               alt="Información sobre despachos y medios de pago de Distribuidora El Palmar"
             />
 
@@ -981,10 +1222,16 @@ function QuantityInput({ value, max, onChange }) {
   );
 }
 
-function ProductCard({ product, onAdd, onImageClick, promo = false }) {
+function ProductCard({ product, onAdd, onImageClick, promo = false, searchResult = false }) {
   const available = product.stock > 0;
   return (
-    <article className="card">
+    <article className={`card ${searchResult ? "search-result-card" : ""}`} id={`product-${product.id}`}>
+      {searchResult && (
+        <div className="search-result-badge">
+          <Search size={13} />
+          <span>Resultado de búsqueda</span>
+        </div>
+      )}
       <div
         className={`product-placeholder ${product.image ? "product-image-clickable" : ""}`}
         onClick={() => product.image && onImageClick?.(product)}
@@ -1006,7 +1253,13 @@ function ProductCard({ product, onAdd, onImageClick, promo = false }) {
             loading="lazy"
             onError={(e) => { e.currentTarget.style.display = "none"; }}
           />
-        ) : <Package size={25} />}
+        ) : (
+          <div className="product-photo-placeholder" aria-label="Foto en proceso">
+            <Camera size={30} strokeWidth={1.6} />
+            <span>FOTO EN PROCESO</span>
+            <small>Disponible próximamente</small>
+          </div>
+        )}
         {product.image && (
           <span className="product-image-zoom-badge" aria-hidden="true">⌕</span>
         )}
