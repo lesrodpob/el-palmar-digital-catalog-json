@@ -123,14 +123,24 @@ input {
 }
 
 .category-banner-full {
-    min-height: 260px;
+    min-height: 0;
     margin-bottom: 0;
-    border-radius: 0;
+    border-radius: 18px;
     box-shadow: none;
 }
 
+.category-banner-full img {
+    position: relative;
+    inset: auto;
+    display: block;
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+}
+
+.category-banner-full::after,
 .category-banner-full .category-banner-content {
-    min-height: 260px;
+    display: none;
 }
 
 /* =========================
@@ -735,6 +745,78 @@ input {
 .info-trigger:hover {
     background: #e5eee3;
     transform: translateY(-1px);
+}
+
+.info-trigger.info-floating {
+    position: fixed;
+    right: 68px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 999;
+    width: 52px;
+    height: 52px;
+    min-height: 52px;
+    padding: 0;
+    border: 1px solid #dbe5d8;
+    border-radius: 50%;
+    background: #fff;
+    color: #31543b;
+    box-shadow: 0 5px 16px rgba(32, 56, 42, .14);
+    gap: 0;
+}
+
+.info-trigger.info-floating:hover {
+    background: #eef3eb;
+    transform: translateY(-50%) scale(1.05);
+    box-shadow: 0 7px 20px rgba(32, 56, 42, .18);
+}
+
+.info-trigger.info-floating span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.info-trigger.info-preview {
+    width: 118px;
+    height: 118px;
+    min-height: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    overflow: hidden;
+    box-shadow: 0 8px 22px rgba(32, 56, 42, .13);
+}
+
+.info-trigger.info-preview:hover {
+    background: transparent;
+    transform: translateY(-2px) scale(1.025);
+    box-shadow: 0 11px 28px rgba(32, 56, 42, .18);
+}
+
+.info-trigger.info-preview img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+    user-select: none;
+    -webkit-user-drag: none;
+}
+
+.section-head-no-title {
+    justify-content: flex-end;
+}
+
+.section-head-no-title span {
+    margin-left: auto;
 }
 
 .info-modal-backdrop {
@@ -5440,5 +5522,206 @@ input {
 @media (max-width: 520px) {
     .catalog-controls {
         grid-template-columns: 1fr;
+    }
+}
+
+
+/* Botón compacto de información */
+.info-trigger-wrap {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    padding: 8px 28px 4px;
+    background: #fff;
+}
+
+.info-trigger.info-preview {
+    width: auto;
+    height: 40px;
+    min-height: 40px;
+    padding: 0 15px;
+    border: 1px solid #d8e3d5;
+    border-radius: 10px;
+    background: #eef3eb;
+    color: #31543b;
+    overflow: visible;
+    box-shadow: none;
+    gap: 7px;
+}
+
+.info-trigger.info-preview:hover {
+    background: #e5eee3;
+    transform: translateY(-1px);
+    box-shadow: 0 5px 14px rgba(32, 56, 42, .10);
+}
+
+.info-trigger.info-preview span {
+    font: 600 12px "DM Sans", Arial, sans-serif;
+    letter-spacing: .01em;
+}
+
+@media (max-width: 850px) {
+    .info-trigger-wrap {
+        padding: 7px 14px 3px;
+    }
+
+    .info-trigger.info-preview {
+        width: auto;
+        height: 38px;
+        min-height: 38px;
+        padding: 0 13px;
+    }
+}
+
+@media (max-width: 600px) {
+    .info-trigger-wrap {
+        padding: 6px 11px 3px;
+    }
+
+    .info-trigger.info-preview {
+        height: 36px;
+        min-height: 36px;
+        padding: 0 12px;
+        border-radius: 9px;
+    }
+
+    .info-trigger.info-preview span {
+        font-size: 11px;
+    }
+}
+
+/* =========================================================
+   INFORMACIÓN — BOTÓN FLOTANTE MINIMALISTA
+   No ocupa espacio del catálogo y queda separado de "Ver pedido".
+   ========================================================= */
+.info-trigger-wrap {
+    position: fixed;
+    right: 18px;
+    bottom: 24px;
+    z-index: 15;
+    width: 70px;
+    height: 70px;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    pointer-events: none;
+}
+
+.info-trigger.info-floating {
+    width: 66px;
+    height: 66px;
+    min-height: 66px;
+    padding: 7px;
+    border: 0;
+    border-radius: 50%;
+    background: #245034;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    box-shadow: 0 7px 20px rgba(32, 56, 42, .20);
+    font: 600 9px "DM Sans", Arial, sans-serif;
+    line-height: 1.05;
+    letter-spacing: .01em;
+    cursor: pointer;
+    pointer-events: auto;
+    transition: transform .18s ease, box-shadow .18s ease, background .18s ease;
+}
+
+.info-trigger.info-floating span {
+    font: 600 9px "DM Sans", Arial, sans-serif;
+    white-space: nowrap;
+}
+
+.info-trigger.info-floating:hover {
+    background: #315f40;
+    transform: translateY(-2px) scale(1.035);
+    box-shadow: 0 10px 25px rgba(32, 56, 42, .26);
+}
+
+.info-trigger.info-floating:focus-visible {
+    outline: 3px solid rgba(243, 221, 176, .9);
+    outline-offset: 3px;
+}
+
+@media (max-width: 850px) {
+    .info-trigger-wrap {
+        right: 12px;
+        bottom: 88px;
+        width: 62px;
+        height: 62px;
+    }
+
+    .info-trigger.info-floating {
+        width: 58px;
+        height: 58px;
+        min-height: 58px;
+        padding: 6px;
+    }
+
+    .info-trigger.info-floating svg {
+        width: 19px;
+        height: 19px;
+    }
+
+    .info-trigger.info-floating span {
+        font-size: 8px;
+    }
+}
+
+@media (max-width: 380px) {
+    .info-trigger-wrap {
+        right: 9px;
+        bottom: 84px;
+    }
+}
+
+
+/* INFO FLOATING — a la derecha de "Ver pedido", con separación */
+@media (max-width: 850px) {
+    .info-trigger-wrap {
+        position: fixed;
+        left: calc(50% + min(41vw, 160px) + 10px);
+        right: auto;
+        bottom: 16px;
+        top: auto;
+        width: 48px;
+        height: 48px;
+        padding: 0;
+        margin: 0;
+        transform: none;
+        z-index: 1001;
+    }
+
+    .info-trigger.info-floating {
+        position: static;
+        width: 48px;
+        height: 48px;
+        min-height: 48px;
+        transform: none;
+    }
+
+    .info-trigger.info-floating:hover {
+        transform: scale(1.05);
+    }
+}
+
+@media (max-width: 380px) {
+    .info-trigger-wrap {
+        left: calc(50% + 41vw + 8px);
+        bottom: 16px;
+        width: 44px;
+        height: 44px;
+    }
+
+    .info-trigger.info-floating {
+        width: 44px;
+        height: 44px;
+        min-height: 44px;
     }
 }

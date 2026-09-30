@@ -4,7 +4,7 @@ import * as XLSX from "xlsx";
 import {
   Home, Wine, Martini, Beer, CupSoda, Snowflake,
   Search, ShoppingCart, MessageCircle, Trash2, Camera,
-  Minus, Plus, Package, Truck, Percent, Headphones, ChevronRight,
+  Minus, Plus, Package, Truck, Info, Percent, Headphones, ChevronRight,
   LoaderCircle, AlertCircle
 , Banknote, FileText, CreditCard, ArrowLeftRight} from "lucide-react";
 import "./styles.css";
@@ -21,6 +21,7 @@ const BEST_SELLER_FILES = {
 };
 
 const categoryBannerConfig = {
+  DESTACADOS: { title: "Destacados", subtitle: "Descubre los vinos más elegidos de El Palmar", eyebrow: "SELECCIÓN EL PALMAR", icon: "🍷", image: "/category-banners/destacados.png" },
   VINOS: { title: "Vinos", subtitle: "Descubre los vinos más elegidos de El Palmar", eyebrow: "SELECCIÓN EL PALMAR", icon: "🍷", image: "/category-banners/vinos.png" },
   ESPUMANTES: { title: "Espumantes", subtitle: "Descubre los espumantes más elegidos de El Palmar", eyebrow: "SELECCIÓN EL PALMAR", icon: "🥂", image: "/category-banners/espumantes.png" },
   LICORES: { title: "Licores", subtitle: "Descubre los licores más elegidos de El Palmar", eyebrow: "SELECCIÓN EL PALMAR", icon: "🍸", image: "/category-banners/licores.png" },
@@ -705,11 +706,7 @@ ${discountLine}\u{1F4B0} Total con descuento: ${money(cartTotal)}
             }}
           />
         ) : null}
-        <div className="category-banner-content">
-          <span>{currentCategoryConfig?.eyebrow || "SELECCIÓN EL PALMAR"}</span>
-          <strong>{currentCategoryConfig?.icon || "✦"} {currentCategoryConfig?.title || categoryForDisplay}</strong>
-          <p>{currentCategoryConfig?.subtitle || "Explora nuestros productos y encuentra lo que buscas."}</p>
-        </div>
+
       </div>
     </section>
   );
@@ -863,13 +860,12 @@ ${discountLine}\u{1F4B0} Total con descuento: ${money(cartTotal)}
 
         <div className="info-trigger-wrap">
           <button
-            className="info-trigger"
-            onClick={() => setInfoOpen(true)}
+            className="info-trigger info-floating"
+            onClick={() => { setCartOpen(false); setInfoOpen(true); }}
             type="button"
+            aria-label="Abrir información sobre despachos y medios de pago"
           >
-            <Truck size={18} />
-            <span>Despacho y medios de pago</span>
-            <ChevronRight size={17} />
+            <Info size={21} aria-hidden="true" />
           </button>
         </div>
 
@@ -1184,7 +1180,7 @@ ${discountLine}\u{1F4B0} Total con descuento: ${money(cartTotal)}
         </div>
       )}
 
-      {!cartOpen && !imageProduct && (
+      {!cartOpen && !infoOpen && !imageProduct && (
         <button
           className="cart-toggle"
           onClick={() => setCartOpen(true)}
