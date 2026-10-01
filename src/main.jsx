@@ -6,7 +6,8 @@ import {
   Search, ShoppingCart, MessageCircle, Trash2, Camera,
   Minus, Plus, Package, Truck, Info, Percent, Headphones, ChevronRight,
   LoaderCircle, AlertCircle
-, Banknote, FileText, CreditCard, ArrowLeftRight} from "lucide-react";
+  , Banknote, FileText, CreditCard, ArrowLeftRight
+} from "lucide-react";
 import "./styles.css";
 
 const JSON_URL = "/data/products-list.json";
@@ -21,13 +22,13 @@ const BEST_SELLER_FILES = {
 };
 
 const categoryBannerConfig = {
-  DESTACADOS: { title: "Destacados", subtitle: "Descubre los vinos más elegidos de El Palmar", eyebrow: "SELECCIÓN EL PALMAR", icon: "🍷", image: "/category-banners/destacados.png" },
-  VINOS: { title: "Vinos", subtitle: "Descubre los vinos más elegidos de El Palmar", eyebrow: "SELECCIÓN EL PALMAR", icon: "🍷", image: "/category-banners/vinos.png" },
-  ESPUMANTES: { title: "Espumantes", subtitle: "Descubre los espumantes más elegidos de El Palmar", eyebrow: "SELECCIÓN EL PALMAR", icon: "🥂", image: "/category-banners/espumantes.png" },
-  LICORES: { title: "Licores", subtitle: "Descubre los licores más elegidos de El Palmar", eyebrow: "SELECCIÓN EL PALMAR", icon: "🍸", image: "/category-banners/licores.png" },
-  CERVEZAS: { title: "Cervezas", subtitle: "Descubre las cervezas más elegidas de El Palmar", eyebrow: "SELECCIÓN EL PALMAR", icon: "🍺", image: "/category-banners/cervezas.png" },
-  BEBIDAS: { title: "Bebidas", subtitle: "Descubre las bebidas más elegidas de El Palmar", eyebrow: "SELECCIÓN EL PALMAR", icon: "🥤", image: "/category-banners/bebidas.png" },
-  CONGELADOS: { title: "Congelados", subtitle: "Descubre los productos congelados más elegidos de El Palmar", eyebrow: "SELECCIÓN EL PALMAR", icon: "❄️", image: "/category-banners/congelados.png" },
+  DESTACADOS: { image: "/category-banners/destacados.png" },
+  VINOS: { image: "/category-banners/vinos.png" },
+  ESPUMANTES: { image: "/category-banners/espumantes.png" },
+  LICORES: { image: "/category-banners/licores.png" },
+  CERVEZAS: { image: "/category-banners/cervezas.png" },
+  BEBIDAS: { image: "/category-banners/bebidas.png" },
+  CONGELADOS: { image: "/category-banners/congelados.png" },
 };
 
 const categoryGroups = [
@@ -423,10 +424,10 @@ function App() {
 
     const cats = categoryForFamilies === "ALL"
       ? (isSearchingFromInicio
-          ? Object.values(groupMap).flat()
-          : Object.entries(groupMap)
-              .filter(([key]) => key !== "DESTACADOS")
-              .flatMap(([, categories]) => categories))
+        ? Object.values(groupMap).flat()
+        : Object.entries(groupMap)
+          .filter(([key]) => key !== "DESTACADOS")
+          .flatMap(([, categories]) => categories))
       : groupMap[categoryForFamilies];
 
     // Después de una búsqueda, mostramos únicamente la familia
@@ -841,9 +842,8 @@ ${discountLine}\u{1F4B0} Total con descuento: ${money(cartTotal)}
                   <button
                     key={product.id}
                     type="button"
-                    className={`search-suggestion ${
-                      activeSearchSuggestion === index ? "active" : ""
-                    }`}
+                    className={`search-suggestion ${activeSearchSuggestion === index ? "active" : ""
+                      }`}
                     onMouseDown={e => e.preventDefault()}
                     onClick={() => selectSearchSuggestion(product)}
                     role="option"
@@ -861,11 +861,12 @@ ${discountLine}\u{1F4B0} Total con descuento: ${money(cartTotal)}
         <div className="info-trigger-wrap">
           <button
             className="info-trigger info-floating"
-            onClick={() => { setCartOpen(false); setInfoOpen(true); }}
+            onClick={() => setInfoOpen(true)}
             type="button"
             aria-label="Abrir información sobre despachos y medios de pago"
           >
-            <Info size={21} aria-hidden="true" />
+            <Info size={21} />
+            <span>Información</span>
           </button>
         </div>
 
@@ -881,72 +882,65 @@ ${discountLine}\u{1F4B0} Total con descuento: ${money(cartTotal)}
                     <h2>Ofertas y productos destacados</h2>
                   </div>
 
-                {products.some(
-                  p => p.family.toLowerCase() === "hielos"
-                ) && (
-                    <div className="ice-deal">
-                      <img
-                        src="/hielo-volumen-banner.png"
-                        alt="Descuento por volumen en hielo"
-                      />
+                  {products.some(
+                    p => p.family.toLowerCase() === "hielos"
+                  ) && (
+                      <div className="ice-deal">
+                        <img
+                          src="/hielo-volumen-banner.png"
+                          alt="Descuento por volumen en hielo"
+                        />
+                      </div>
+                    )}
+
+                  <div className="promo-carousel">
+                    {promoTotalPages > 1 && (
+                      <button
+                        type="button"
+                        className="promo-arrow promo-arrow-left"
+                        onClick={() => changePromoPage(-1)}
+                        aria-label="Promociones anteriores"
+                      >
+                        ←
+                      </button>
+                    )}
+
+                    <div className="product-grid promo-grid" key={promoPage}>
+                      {visibleFeaturedProducts.map(p => (
+                        <ProductCard key={p.id} product={p} onAdd={addToCart} onImageClick={(product) => { setImageProduct(product); setImageZoom(1); }} promo={false} />
+                      ))}
+                    </div>
+
+                    {promoTotalPages > 1 && (
+                      <button
+                        type="button"
+                        className="promo-arrow promo-arrow-right"
+                        onClick={() => changePromoPage(1)}
+                        aria-label="Siguientes promociones"
+                      >
+                        →
+                      </button>
+                    )}
+                  </div>
+
+                  {promoTotalPages > 1 && (
+                    <div className="promo-dots" aria-label="Páginas de promociones">
+                      {Array.from({ length: promoTotalPages }).map((_, index) => (
+                        <button
+                          key={index}
+                          type="button"
+                          className={index === promoPage ? "active" : ""}
+                          onClick={() => setPromoPage(index)}
+                          aria-label={`Ver promociones ${index + 1}`}
+                        />
+                      ))}
                     </div>
                   )}
-
-                <div className="promo-carousel">
-                  {promoTotalPages > 1 && (
-                    <button
-                      type="button"
-                      className="promo-arrow promo-arrow-left"
-                      onClick={() => changePromoPage(-1)}
-                      aria-label="Promociones anteriores"
-                    >
-                      ←
-                    </button>
-                  )}
-
-                  <div className="product-grid promo-grid" key={promoPage}>
-                    {visibleFeaturedProducts.map(p => (
-                      <ProductCard key={p.id} product={p} onAdd={addToCart} onImageClick={(product) => { setImageProduct(product); setImageZoom(1); }} promo={false} />
-                    ))}
-                  </div>
-
-                  {promoTotalPages > 1 && (
-                    <button
-                      type="button"
-                      className="promo-arrow promo-arrow-right"
-                      onClick={() => changePromoPage(1)}
-                      aria-label="Siguientes promociones"
-                    >
-                      →
-                    </button>
-                  )}
-                </div>
-
-                {promoTotalPages > 1 && (
-                  <div className="promo-dots" aria-label="Páginas de promociones">
-                    {Array.from({ length: promoTotalPages }).map((_, index) => (
-                      <button
-                        key={index}
-                        type="button"
-                        className={index === promoPage ? "active" : ""}
-                        onClick={() => setPromoPage(index)}
-                        aria-label={`Ver promociones ${index + 1}`}
-                      />
-                    ))}
-                  </div>
-                )}
                 </section>
               )}
 
               <section id="products-section" className="products-head">
-                <div className="section-head">
-                  <h2>{
-                    searchCategory
-                      ? categoryGroups.find(c => c.key === searchCategory)?.label
-                      : selectedCategory === "ALL"
-                        ? "Todos los productos"
-                        : categoryGroups.find(c => c.key === selectedCategory)?.label
-                  }</h2>
+                <div className="section-head section-head-no-title">
                   <span>{filteredProducts.length} productos</span>
                 </div>
 
@@ -1180,7 +1174,7 @@ ${discountLine}\u{1F4B0} Total con descuento: ${money(cartTotal)}
         </div>
       )}
 
-      {!cartOpen && !infoOpen && !imageProduct && (
+      {!cartOpen && !imageProduct && !infoOpen && (
         <button
           className="cart-toggle"
           onClick={() => setCartOpen(true)}
@@ -1190,8 +1184,8 @@ ${discountLine}\u{1F4B0} Total con descuento: ${money(cartTotal)}
           <span>Ver pedido</span>
           <span className="cart-toggle-whatsapp" aria-label="WhatsApp">
             <svg viewBox="0 0 32 32" aria-hidden="true" focusable="false">
-              <path d="M16 2.6C8.63 2.6 2.65 8.58 2.65 15.95c0 2.35.62 4.55 1.79 6.49L2.6 29.4l7.13-1.82a13.28 13.28 0 0 0 6.27 1.57h.01c7.36 0 13.34-5.98 13.34-13.34C29.35 8.58 23.37 2.6 16 2.6Z" fill="#25D366"/>
-              <path d="M11.07 8.86c.3-.43.75-.64 1.26-.56l1.56.24c.43.07.77.35.9.77l.54 1.73c.11.36.02.75-.25 1.02l-.77.78c-.18.18-.22.45-.09.68.74 1.3 1.77 2.38 3.03 3.19.23.15.52.14.72-.04l.82-.74c.29-.26.71-.34 1.06-.2l1.63.66c.4.16.67.53.68.96l.04 1.54c.01.5-.25.96-.69 1.2-.58.32-1.28.48-1.98.4-1.76-.2-3.71-1.32-5.55-3.16-1.83-1.83-2.96-3.78-3.16-5.54-.08-.71.08-1.41.4-1.99l.85-.94Z" fill="#fff"/>
+              <path d="M16 2.6C8.63 2.6 2.65 8.58 2.65 15.95c0 2.35.62 4.55 1.79 6.49L2.6 29.4l7.13-1.82a13.28 13.28 0 0 0 6.27 1.57h.01c7.36 0 13.34-5.98 13.34-13.34C29.35 8.58 23.37 2.6 16 2.6Z" fill="#25D366" />
+              <path d="M11.07 8.86c.3-.43.75-.64 1.26-.56l1.56.24c.43.07.77.35.9.77l.54 1.73c.11.36.02.75-.25 1.02l-.77.78c-.18.18-.22.45-.09.68.74 1.3 1.77 2.38 3.03 3.19.23.15.52.14.72-.04l.82-.74c.29-.26.71-.34 1.06-.2l1.63.66c.4.16.67.53.68.96l.04 1.54c.01.5-.25.96-.69 1.2-.58.32-1.28.48-1.98.4-1.76-.2-3.71-1.32-5.55-3.16-1.83-1.83-2.96-3.78-3.16-5.54-.08-.71.08-1.41.4-1.99l.85-.94Z" fill="#fff" />
             </svg>
           </span>
           <b>{cartUnits}</b>
