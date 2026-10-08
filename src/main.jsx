@@ -56,6 +56,39 @@ const money = (value) => new Intl.NumberFormat("es-CL", {
   style: "currency", currency: "CLP", maximumFractionDigits: 0
 }).format(Number(value) || 0);
 
+// Configuración de promociones que permiten combinar sabores/productos.
+// Para agregar otra promoción en el futuro, basta con sumar una entrada aquí.
+const PROMOTION_CONFIGS = [
+  {
+    id: "KANTAL_GIN",
+    title: "Promo Gin Kantal",
+    minUnits: 6,
+    options: [
+      { label: "Tropical Gin", match: /tropical\s+gin/i },
+      { label: "Gin & Berries", match: /gin\s*(?:&|y)\s*berries|berries/i },
+    ],
+  },
+];
+
+function getPromotionConfig(product) {
+  if (!product) return null;
+  const name = String(product.name || "");
+  return PROMOTION_CONFIGS.find((config) =>
+    config.id === "KANTAL_GIN"
+      ? /promo\s+gin\s+kantal/i.test(name)
+      : false
+  ) || null;
+}
+
+function getPromotionOptions(config, products) {
+  if (!config) return [];
+
+  return config.options.map((option) => {
+    const product = products.find((p) => option.match.test(String(p.name || "")));
+    return { ...option, product: product || null };
+  });
+}
+
 function normalizeProduct(row, index) {
   const stock = Number(row.stock);
   return {
@@ -128,6 +161,8 @@ function App() {
   const [infoOpen, setInfoOpen] = useState(true);
   const [imageProduct, setImageProduct] = useState(null);
   const [imageZoom, setImageZoom] = useState(1);
+  const [promotionProduct, setPromotionProduct] = useState(null);
+  const [promotionSelections, setPromotionSelections] = useState({});
   const cartRef = useRef(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -251,8 +286,10 @@ function App() {
   function addFromImageModal() {
     if (!imageProduct || imageProduct.stock <= 0) return;
     addToCart(imageProduct);
-    setImageProduct(null);
-    setImageZoom(1);
+    if (!getPromotionConfig(imageProduct)) {
+      setImageProduct(null);
+      setImageZoom(1);
+    }
   }
 
   const searchSuggestions = useMemo(() => {
@@ -578,7 +615,6 @@ function App() {
   // Esto evita que un orden/familia seleccionado en una categoría
   // se arrastre a la siguiente categoría.
   useEffect(() => {
-    setSelectedFamily("ALL");
     setCatalogSort("DEFAULT");
     setFamilyFiltersExpanded(true);
     setCurrentPage(1);
@@ -618,6 +654,19 @@ function App() {
   function addToCart(product) {
     if (product.stock <= 0) return;
 
+    const promotion = getPromotionConfig(product);
+    if (promotion) {
+      const options = getPromotionOptions(promotion, products);
+      const initial = Object.fromEntries(
+        options.map((option) => [option.label, 0])
+      );
+      setPromotionProduct({ product, config: promotion, options });
+      setPromotionSelections(initial);
+      setImageProduct(null);
+      setImageZoom(1);
+      return;
+    }
+
     setCartOpen(true);
 
     setCart(prev => {
@@ -628,6 +677,86 @@ function App() {
       }
       return [...prev, { ...product, quantity: 1 }];
     });
+  }
+
+  function closePromotionSelector() {
+    setPromotionProduct(null);
+    setPromotionSelections({});
+  }
+
+  function changePromotionSelection(label, delta) {
+    setPromotionSelections(prev => {
+      const option = promotionProduct?.options?.find(item => item.label === label);
+      const stock = Math.max(0, Math.floor(option?.product?.stock || 0));
+      const current = Number(prev[label] || 0);
+      const next = Math.min(stock, Math.max(0, current + delta));
+      return { ...prev, [label]: next };
+    });
+  }
+
+  function addPromotionToCart() {
+    if (!promotionProduct) return;
+
+    const { product, config, options } = promotionProduct;
+    const selections = options
+      .map(option => ({
+        label: option.label,
+        quantity: Number(promotionSelections[option.label] || 0),
+        product: option.product,
+      }))
+      .filter(item => item.quantity > 0 && item.product);
+
+    const totalUnits = selections.reduce((sum, item) => sum + item.quantity, 0);
+    if (totalUnits < config.minUnits) return;
+
+    const maxPromoUnits = selections.reduce(
+      (sum, item) => sum + Math.floor(item.product.stock),
+      0
+    );
+    if (totalUnits > maxPromoUnits) return;
+
+    const promoItem = {
+      ...product,
+      id: `promo-${config.id}`,
+      quantity: totalUnits,
+      stock: maxPromoUnits,
+      isPromotion: true,
+      promotionId: config.id,
+      promotionName: config.title,
+      promotionSelections: selections.map(item => ({
+        name: item.product.name,
+        label: item.label,
+        quantity: item.quantity,
+      })),
+    };
+
+    setCart(prev => {
+      const existing = prev.find(i => i.isPromotion && i.promotionId === config.id);
+      if (!existing) return [...prev, promoItem];
+
+      const mergedSelections = [...existing.promotionSelections];
+      selections.forEach(selection => {
+        const found = mergedSelections.find(item => item.name === selection.product.name);
+        if (found) found.quantity += selection.quantity;
+        else mergedSelections.push({
+          name: selection.product.name,
+          label: selection.label,
+          quantity: selection.quantity,
+        });
+      });
+
+      return prev.map(item => item.id === existing.id
+        ? {
+            ...item,
+            quantity: item.quantity + totalUnits,
+            promotionSelections: mergedSelections,
+          }
+        : item
+      );
+    });
+
+    setCartOpen(true);
+    closePromotionSelector();
   }
 
   function changeQty(id, delta) {
@@ -662,9 +791,17 @@ function App() {
     if (!cart.length) return;
 
     const whatsappNumber = "988137633";
-    const lines = cart.map(
-      i => `• ${i.name} x${i.quantity} — ${money(i.price * i.quantity)}`
-    );
+    const lines = cart.flatMap(i => {
+      if (!i.isPromotion) {
+        return [`• ${i.name} x${i.quantity} — ${money(i.price * i.quantity)}`];
+      }
+
+      const detail = i.promotionSelections
+        .map(selection => `${selection.label} x${selection.quantity}`)
+        .join(", ");
+
+      return [`• ${i.name} — ${detail} — ${i.quantity} unidades — ${money(i.price * i.quantity)}`];
+    });
 
     const discountLine = iceDiscount > 0
       ? `\u{1F3AF} Descuento por volumen en hielo: -${money(iceDiscount)}\n`
@@ -1174,6 +1311,111 @@ ${discountLine}\u{1F4B0} Total con descuento: ${money(cartTotal)}
         </div>
       )}
 
+      {promotionProduct && (
+        <div
+          className="promotion-selector-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="promotion-selector-title"
+          onClick={closePromotionSelector}
+        >
+          <div
+            className="promotion-selector"
+            onClick={e => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              className="promotion-selector-close"
+              onClick={closePromotionSelector}
+              aria-label="Cerrar selección de promoción"
+            >
+              ×
+            </button>
+
+            <div className="promotion-selector-head">
+              <div>
+                <span className="promotion-selector-kicker">PROMOCIÓN</span>
+                <h2 id="promotion-selector-title">{promotionProduct.config.title}</h2>
+                <p>Elige tus sabores para completar la promoción.</p>
+              </div>
+              <div className="promotion-selector-price">
+                <strong>{money(promotionProduct.product.price)}</strong>
+                <span>por unidad</span>
+              </div>
+            </div>
+
+            <div className="promotion-selector-rule">
+              Selecciona mínimo <strong>{promotionProduct.config.minUnits} unidades</strong>
+            </div>
+
+            <div className="promotion-options">
+              {promotionProduct.options.map(option => {
+                const stock = Math.floor(option.product?.stock || 0);
+                const quantity = Number(promotionSelections[option.label] || 0);
+                return (
+                  <div className="promotion-option" key={option.label}>
+                    <div className="promotion-option-main">
+                      <div className="promotion-option-image">
+                        {option.product?.image ? (
+                          <img src={option.product.image} alt={option.product.name} />
+                        ) : (
+                          <Package size={24} />
+                        )}
+                      </div>
+                      <div className="promotion-option-text">
+                        <strong>{option.label}</strong>
+                      </div>
+                    </div>
+                    <div className="promotion-option-qty">
+                      <button
+                        type="button"
+                        onClick={() => changePromotionSelection(option.label, -1)}
+                        disabled={quantity <= 0}
+                        aria-label={`Quitar ${option.label}`}
+                      >−</button>
+                      <strong>{quantity}</strong>
+                      <button
+                        type="button"
+                        onClick={() => changePromotionSelection(option.label, 1)}
+                        disabled={quantity >= stock}
+                        aria-label={`Agregar ${option.label}`}
+                      >+</button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="promotion-selector-summary">
+              <div>
+                <span>Total seleccionado</span>
+                <strong>
+                  {Object.values(promotionSelections).reduce((sum, value) => sum + Number(value || 0), 0)} unidades
+                </strong>
+              </div>
+              <strong>
+                {money(
+                  promotionProduct.product.price *
+                  Object.values(promotionSelections).reduce((sum, value) => sum + Number(value || 0), 0)
+                )}
+              </strong>
+            </div>
+
+            <button
+              type="button"
+              className="promotion-selector-add"
+              disabled={
+                Object.values(promotionSelections).reduce((sum, value) => sum + Number(value || 0), 0) < promotionProduct.config.minUnits
+              }
+              onClick={addPromotionToCart}
+            >
+              <ShoppingCart size={18} />
+              Agregar promoción al pedido
+            </button>
+          </div>
+        </div>
+      )}
+
       {!cartOpen && !imageProduct && !infoOpen && (
         <button
           className="cart-toggle"
@@ -1210,16 +1452,34 @@ ${discountLine}\u{1F4B0} Total con descuento: ${money(cartTotal)}
             {cart.length === 0 ? <p>Tu pedido aparecerá aquí.</p> : cart.map(item => (
               <div className="cart-row" key={item.id}>
                 <div className="cart-thumb">{item.image ? <img className="cart-product-image" src={item.image} alt="" loading="lazy" onError={(e) => { e.currentTarget.style.display = "none"; }} /> : <Package size={22} />}</div>
-                <div className="cart-info"><b>{item.name}</b><strong>{money(item.price)}</strong></div>
-                <div className="qty">
-                  <button onClick={() => changeQty(item.id, -1)} aria-label="Disminuir cantidad"><Minus size={14} /></button>
-                  <QuantityInput
-                    value={item.quantity}
-                    max={Math.floor(item.stock)}
-                    onChange={(value) => setQty(item.id, value)}
-                  />
-                  <button onClick={() => changeQty(item.id, 1)} aria-label="Aumentar cantidad"><Plus size={14} /></button>
+                <div className="cart-info">
+                  <b>{item.name}</b>
+                  {item.isPromotion && (
+                    <div className="cart-promotion-details">
+                      {item.promotionSelections.map(selection => (
+                        <span key={selection.name}>
+                          {selection.label} ×{selection.quantity}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <strong>{money(item.price)}</strong>
                 </div>
+                {item.isPromotion ? (
+                  <div className="qty promo-qty" aria-label={`${item.quantity} unidades de promoción`}>
+                    <span>{item.quantity}</span>
+                  </div>
+                ) : (
+                  <div className="qty">
+                    <button onClick={() => changeQty(item.id, -1)} aria-label="Disminuir cantidad"><Minus size={14} /></button>
+                    <QuantityInput
+                      value={item.quantity}
+                      max={Math.floor(item.stock)}
+                      onChange={(value) => setQty(item.id, value)}
+                    />
+                    <button onClick={() => changeQty(item.id, 1)} aria-label="Aumentar cantidad"><Plus size={14} /></button>
+                  </div>
+                )}
                 <button className="remove" onClick={() => changeQty(item.id, -item.quantity)}><Trash2 size={18} /></button>
               </div>
             ))}
