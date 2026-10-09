@@ -56,6 +56,16 @@ const money = (value) => new Intl.NumberFormat("es-CL", {
   style: "currency", currency: "CLP", maximumFractionDigits: 0
 }).format(Number(value) || 0);
 
+// Cajas y displays se muestran como disponibles aunque el stock del sistema sea negativo.
+function isCajaDisplay(product) {
+  const name = String(product?.name || "").trim().toUpperCase();
+  return name.startsWith("CAJA") || name.startsWith("DISPLAY");
+}
+
+function effectiveStock(product) {
+  return isCajaDisplay(product) ? Number.MAX_SAFE_INTEGER : Math.max(0, Math.floor(Number(product?.stock) || 0));
+}
+
 // Configuración de promociones que permiten combinar sabores/productos.
 // Para agregar otra promoción en el futuro, basta con sumar una entrada aquí.
 const PROMOTION_CONFIGS = [
@@ -250,7 +260,7 @@ function App() {
 
   const featuredProducts = useMemo(
     () => [...products]
-      .filter(p => p.category === "DESTACADOS" && p.stock > 0)
+      .filter(p => p.category === "DESTACADOS" && (p.stock > 0 || isCajaDisplay(p)))
       .sort((a, b) => a.name.localeCompare(b.name, "es", { sensitivity: "base" })),
     [products]
   );
@@ -284,7 +294,7 @@ function App() {
   }
 
   function addFromImageModal() {
-    if (!imageProduct || imageProduct.stock <= 0) return;
+    if (!imageProduct || (imageProduct.stock <= 0 && !isCajaDisplay(imageProduct))) return;
     addToCart(imageProduct);
     if (!getPromotionConfig(imageProduct)) {
       setImageProduct(null);
@@ -307,7 +317,7 @@ function App() {
       .filter(p => {
         // El buscador solo debe sugerir productos pertenecientes a las
         // categorías que realmente forman parte del catálogo.
-        if (p.stock <= 0 || !catalogCategories.has(p.category)) return false;
+        if ((p.stock <= 0 && !isCajaDisplay(p)) || !catalogCategories.has(p.category)) return false;
 
         return [p.name, p.family, p.category, p.barcode]
           .some(v => String(v ?? "").toLowerCase().includes(query));
@@ -344,7 +354,7 @@ function App() {
     const target =
       product ||
       products.find(p =>
-        p.stock > 0 &&
+        (p.stock > 0 || isCajaDisplay(p)) &&
         Object.values(groupMap).flat().includes(p.category) &&
         p.name.toLowerCase() === query
       ) ||
@@ -431,7 +441,7 @@ function App() {
     const matchedCategories = new Set(
       products
         .filter(p => {
-          if (p.stock <= 0 || p.category === "PROMOCIONES") return false;
+          if ((p.stock <= 0 && !isCajaDisplay(p)) || p.category === "PROMOCIONES") return false;
           return [p.name, p.family, p.category, p.barcode]
             .some(v => String(v ?? "").toLowerCase().includes(query));
         })
@@ -517,7 +527,7 @@ function App() {
     return products
       .filter((p) => {
         const matchesCategory = !cats || cats.includes(p.category);
-        const matchesStock = p.stock > 0;
+        const matchesStock = p.stock > 0 || isCajaDisplay(p);
         const matchesFamily = selectedFamily === "ALL" || p.family === selectedFamily;
         // Si el usuario selecciona una familia después de buscar,
         // la familia pasa a ser el filtro principal y el texto del buscador
@@ -652,7 +662,10 @@ function App() {
   }
 
   function addToCart(product) {
-    if (product.stock <= 0) return;
+    if (product.stock <= 0 && !isCajaDisplay(product)) return;
+    const cartProduct = isCajaDisplay(product)
+      ? { ...product, stock: effectiveStock(product) }
+      : product;
 
     const promotion = getPromotionConfig(product);
     if (promotion) {
@@ -670,12 +683,12 @@ function App() {
     setCartOpen(true);
 
     setCart(prev => {
-      const existing = prev.find(i => i.id === product.id);
+      const existing = prev.find(i => i.id === cartProduct.id);
       if (existing) {
-        if (existing.quantity >= Math.floor(product.stock)) return prev;
-        return prev.map(i => i.id === product.id ? { ...i, quantity: i.quantity + 1 } : i);
+        if (existing.quantity >= effectiveStock(cartProduct)) return prev;
+        return prev.map(i => i.id === cartProduct.id ? { ...i, quantity: i.quantity + 1 } : i);
       }
-      return [...prev, { ...product, quantity: 1 }];
+      return [...prev, { ...cartProduct, quantity: 1 }];
     });
   }
 
@@ -1288,18 +1301,18 @@ ${discountLine}\u{1F4B0} Total con descuento: ${money(cartTotal)}
             <div className="product-image-modal-actions">
               <div className="product-image-modal-price">
                 <span>{money(imageProduct.price)}</span>
-                <small className={imageProduct.stock > 0 ? "stock-ok" : "stock-no"}>
-                  {imageProduct.stock > 0 ? "• En stock" : "• Sin stock"}
+                <small className={(imageProduct.stock > 0 || isCajaDisplay(imageProduct)) ? "stock-ok" : "stock-no"}>
+                  {(imageProduct.stock > 0 || isCajaDisplay(imageProduct)) ? "• En stock" : "• Sin stock"}
                 </small>
               </div>
               <button
                 type="button"
                 className="product-image-modal-add"
-                disabled={imageProduct.stock <= 0}
+                disabled={imageProduct.stock <= 0 && !isCajaDisplay(imageProduct)}
                 onClick={addFromImageModal}
               >
                 <ShoppingCart size={17} />
-                <span>{imageProduct.stock > 0 ? "Agregar al pedido" : "Sin stock"}</span>
+                <span>{(imageProduct.stock > 0 || isCajaDisplay(imageProduct)) ? "Agregar al pedido" : "Sin stock"}</span>
               </button>
             </div>
 
@@ -1632,7 +1645,7 @@ function QuantityInput({ value, max, onChange }) {
 }
 
 function ProductCard({ product, onAdd, onImageClick, promo = false, searchResult = false }) {
-  const available = product.stock > 0;
+  const available = product.stock > 0 || isCajaDisplay(product);
   return (
     <article className={`card ${searchResult ? "search-result-card" : ""}`} id={`product-${product.id}`}>
       {searchResult && (
